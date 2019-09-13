@@ -56,14 +56,15 @@ class Robot:
             self.head = self.center + [0, -1]
 
     def getValue(self, inds, value, distance, sr, right=False):
+        # No need to adjust sensor values for now as the Arduino team will be doing it
         # Sensor may not be exactly at the edge of the robot
         # Hence, we will need to adjust the sensor reading
-        adjustment_value = 6
-        if value != -1:
+        # adjustment_value = 6
+        # if value != -1:
             # Adjust the sensor reading by subtracting the number of cm the sensor is away from the edge of the robot
             # Round to nearest 10 cm as it should not be the case where the obstacle does not lie exactly in the
             # 10cm by 10cm space
-            value = round(value - adjustment_value, -1)
+            # value = round(value - adjustment_value, -1)
         vals = []
         # Distance is the number of spaces we assume that the sensor is accurate
         if (value >= distance*10):

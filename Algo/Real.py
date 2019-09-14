@@ -96,6 +96,8 @@ class Robot:
                     # self.marker[r][c] is probably to indicate how many times the coordinate
                     # has been marked
                     self.marked[r][c] += 1
+                # self.phase will be marked as 2 in comm_rpi.py when robot has went one round around arena but
+                # there are still unmapped spaces
                 else:
                     if self.exploredMap[r][c] == 2:
                         break

@@ -1,14 +1,26 @@
+#!python2
+#!/usr/bin/env python
+
+
+
+#Implementation of exploration algorithm for maze solving robot
 import numpy as np
 import time
 
-from Constants import NORTH, SOUTH, WEST, EAST, FORWARD, LEFT, RIGHT, START, MAX_ROWS, MAX_COLS
+#from Constants import NORTH, SOUTH, WEST, EAST, FORWARD, LEFT, RIGHT, START, MAX_ROWS, MAX_COLS
+
+locs= [1,2,3,4]
+t= np.asarray(zip(locs[0], locs[1])) 
+print (t)
+
 
 class Exploration:
 
-    """Implementation of the Right-Wall hugging algorithm for a maze solving
+    """
+    Implementation of the Right-Wall hugging algorithm for a maze solving
        robot.
        The implementation assumes that the robot starts at the bottom-left corner of the map,
-       i.e. (MAX_ROWS - 2, 1). And the robot is facing North
+       i.e. (Rows- 2, 1). And the robot is facing North
 
 
     Attributes:
@@ -17,34 +29,51 @@ class Exploration:
         robot (Robot): Instance of the Robot class
         sensors (list of Numpy arrays): Readings from all sensors
         timeLimit (int): Maximum time allowed for exploration
+
     """
 
-    def __init__(self, realMap=None, timeLimit=None, calibrateLim=6, sim=True):
-        """Constructor to initialise an instance of the Exploration class
+    def __init__(self, realMap="sample1.txt", timeLimit=None, calibrateLim=6, sim=True):
+        """
+
+        Constructor to initialise an instance of the Exploration class
 
         Args:
             realMap (string): File name for real map during simulation stage
             timeLimit (int): Maximum time allowed for exploration
             sim (bool, optional): To specify is the exploration mode is simulation or real
+
+
         """
+
+        # removed calibreLim from original 
+
         self.timeLimit = timeLimit
-        self.exploredArea = 0
+        self.exploredArea = 0  # total explore area needs to be calculated to give perentage area explored 
         self.currentMap = np.zeros([20, 15])
+
+        # call class according to running simulator or real run
         if sim:
             from Simulator import Robot
             self.robot = Robot(self.currentMap, EAST, START, realMap)
-            self.sensors = self.robot.getSensors() # Returns a numpy array of numpy arrays of the sensor values from all sensors
+            self.sensors = self.robot.getSensors()
         else:
             from Real import Robot
             self.robot = Robot(self.currentMap, EAST, START)
+
         self.exploredNeighbours = dict()
+
         self.sim = sim
-        self.calibrateLim = calibrateLim
-        # Set the limits of unexplored area on the map
+        # self.calibrateLim = calibrateLim
+
+        # initialize as boundary of the arena 
+
+# ------> find what virtual wall does 
         self.virtualWall = [0, 0, MAX_ROWS, MAX_COLS]
 
+
     def __validInds(self, inds):
-        """To check if the passed indices are valid or not
+        """
+        To check if the passed indices are valid or not
         To be valid the following conditions should be met:
             * A 3x3 neighbourhood around the center should lie within the arena
             * A 3x3 neighbourhood around the center should have no obstacle
@@ -59,74 +88,44 @@ class Exploration:
         for i in inds:
             r, c = i
             x, y = np.meshgrid([-1, 0, 1], [-1, 0, 1])
-            # np.meshgrid([-1, 0, 1], [-1, 0, 1]) outputs
-            # [array([[-1,  0,  1],
-            #        [-1,  0,  1],
-            #        [-1,  0,  1]]),
-            # array([[-1, -1, -1],
-            #        [ 0,  0,  0],
-            #        [ 1,  1,  1]])]
-            # x is row coordinate while y is column coordinate
             x, y = x+r, y+c
-            # If any of the x coordinate is less than zero
-            # or if any of the y coordinate is less than
-            # or if any of the x coordinate is greater than or equal to the maximum number of rows
-            # or if any of the y coordinates is greater than or equal to the maximum number of columns
             if (np.any(x < 0) or np.any(y < 0) or np.any(x >= MAX_ROWS) or np.any(y >= MAX_COLS)):
-                # Indicate that the coordinate is invalid
                 valid.append(False)
-            # If the value of any of the coordinate is not 1 (meaning that it is free)
-            # We assume that there is an obstacle in the 3 by 3 area
             elif (np.any(self.currentMap[x[0, 0]:x[0, 2]+1, y[0, 0]:y[2, 0]+1] != 1)):
-                # Indicate that the coordinate is invalid
                 valid.append(False)
-            # If coordinates within arena and there are no obstacles
             else:
-                # Indicate that the coordinate is valid
                 valid.append(True)
-        # Return all valid coordinates
         return [tuple(inds[i]) for i in range(len(inds)) if valid[i]]
 
     def getExploredArea(self):
-        """Updates the total number of cells explored at the current state
-        """
+        # returns percent of map explored
         self.exploredArea = (np.sum(self.currentMap != 0)/300.0)*100
 
 
     def nextMove(self):
-        """Decides which direction is free and commands the robot the next action
-        """
+        # Decides which direction is free and commands the robot the next action
         move = []
         # multi step
-        # Number of spaces in front of the robot which is free and where there are obstacles on the right
-        # and all spaces detectable by the left middle, right top and right bottom sensors at these spaces have been explored
         front = self.frontFree()
-        # If right of robot is free
+
         if (self.checkFree([1, 2, 3, 0], self.robot.center)):
-            # Move robot to the right
             self.robot.moveBot(RIGHT)
             move.append(RIGHT)
             front = self.frontFree()
-            # Move robot forward according to frontFree function
             for i in range(front):
                 self.robot.moveBot(FORWARD)
             move.extend([FORWARD]*front)
-        # If front > 0
         elif (front):
-            # Move robot forward
             for i in range(front):
                 self.robot.moveBot(FORWARD)
             move.extend([FORWARD]*front)
-        # Else if the robot's left is free
         elif (self.checkFree([3, 0, 1, 2], self.robot.center)):
-            # Move robot to the left
             self.robot.moveBot(LEFT)
             move.append(LEFT)
             front = self.frontFree()
             for i in range(front):
                 self.robot.moveBot(FORWARD)
             move.extend([FORWARD]*front)
-        # Else, turn the robot around
         else:
             self.robot.moveBot(RIGHT)
             self.robot.moveBot(RIGHT)
@@ -151,25 +150,15 @@ class Exploration:
         #     self.robot.moveBot(RIGHT)
         #     self.robot.moveBot(RIGHT)
         #     move.extend(('O'))
-        # If not a simulation
         if not (self.sim):
-            # Check if there is a wall in front for robot to calibrate
             calibrate_front = self.robot.can_calibrate_front()
-            # Check if there is a wall to the right for the robot to calibrate
             calibrate_right = self.robot.can_calibrate_right()
-            # If the robot is at a corner
             if self.robot.is_corner():
                 move.append('L')
-            # If robot is not at a corner but there is a wall to the right for calibration
             elif (calibrate_right[0]):
-                # Append command from can_calibrate_right function
                 move.append(calibrate_right[1])
-            # If robot is not at a corner and there is no wall to the right of the robot
-            # If there is a wall to the front for calibration
             elif (calibrate_front[0]):
-                # Append command from can_calibrate_front function
                 move.append(calibrate_front[1])
-        # Return list of moves
         return move
 
     def checkFree(self, order, center):
@@ -182,13 +171,9 @@ class Exploration:
         Returns:
             bool: If the queried direction is free
         """
-        # Creates an array of boolean values
         directionFree = np.asarray([self.northFree(center), self.eastFree(center),
                                     self.southFree(center), self.westFree(center)])
         directionFree = directionFree[order]
-        # If directionFree = np.asarray(["North", "East", "South", "West"])
-        # directionFree[[1, 2, 3, 0]] = ['East' 'South' 'West' 'North']
-        # directionFree[[3, 0, 1, 2]] = ['West' 'North' 'East' 'South']
         if self.robot.direction == NORTH:
             return directionFree[0]
         elif self.robot.direction == EAST:
@@ -208,13 +193,9 @@ class Exploration:
             bool: If all indices are free (no obstacle)
         """
         for (r, c) in inds:
-            # self.virtualWall indicates the boundaries of unexplored area
-            # If the indices are not within the unexplored area
-            if not ((self.virtualWall[0] <= r < self.virtualWall[2]) and (
-                     self.virtualWall[1] <= c < self.virtualWall[3])):
-                # Indicate that the move is not valid
+            # checks if r,c are in areana or not
+            if not ((self.virtualWall[0] <= r < self.virtualWall[2]) and (self.virtualWall[1] <= c < self.virtualWall[3])):
                 return False
-        # Check if all three indices have a value of 1 (Explored and is free)
         return (self.currentMap[inds[0][0], inds[0][1]] == 1 and
                 self.currentMap[inds[1][0], inds[1][1]] == 1 and
                 self.currentMap[inds[2][0], inds[2][1]] == 1)
@@ -226,7 +207,6 @@ class Exploration:
             bool: if north is free
         """
         r, c = center
-        # Checks if the three spaces immediately to the north of the robot is free and within the unexplored area
         inds = [[r-2, c], [r-2, c-1], [r-2, c+1]]
         return self.validMove(inds)
 
@@ -237,7 +217,6 @@ class Exploration:
             bool: if east is free
         """
         r, c = center
-        # Checks if the three spaces immediately to the east of the robot is free and within the unexplored area
         inds = [[r, c+2], [r-1, c+2], [r+1, c+2]]
         return self.validMove(inds)
 
@@ -248,7 +227,6 @@ class Exploration:
             bool: if south is free
         """
         r, c = center
-        # Checks if the three spaces immediately to the south of the robot is free and within the unexplored area
         inds = [[r+2, c], [r+2, c-1], [r+2, c+1]]
         return self.validMove(inds)
 
@@ -259,27 +237,22 @@ class Exploration:
             bool: if west is free
         """
         r, c = center
-        # Checks if the three spaces immediately to the west of the robot is free and within the unexplored area
         inds = [[r, c-2], [r-1, c-2], [r+1, c-2]]
         return self.validMove(inds)
 
     def frontFree(self):
-        """
-        returns number of spaces in front of the robot which is free and where there are obstacles on the right
-        and all spaces detectable by the left middle, right top and right bottom sensors at these spaces have been explored
-        """
         r, c = self.robot.center
         counter = 0
-        # If robot is facing north and three spaces immediately to the north of robot is within unexplored boundaries
-        # and has no obstacles
+
+        # check if all three blocks in horizontal in front are free or not
+        # robot is 3x3 and need three spaces horizontally in front of it to move 
+        # depending on the direction robot is facing, we move forward by checking the three blovks in front of the robot
+
+        # returns number of moves the robot can make that are directly in front
+
         if self.robot.direction == NORTH and self.validMove([[r-2, c], [r-2, c-1], [r-2, c+1]]):
-            # Increase counter by 1
             counter = 1
             while(True):
-                # If all three spaces immediately to the north of the robot is free
-                # and the three spaces immediately to the east of the robot is not free
-                # and all coordinates reachable by sensors are explored at position with coordinate [r-counter, c]
-                # increase counter by 1
                 if (self.validMove([[r-2-counter, c], [r-2-counter, c-1], [r-2-counter, c+1]])) and\
                         not self.checkFree([1, 2, 3, 0], [r-(counter), c]) and\
                         self.checkExplored([r-(counter), c]):
@@ -315,7 +288,7 @@ class Exploration:
                     break
         return counter
 
-    # ***Update according to sensor placement
+
     def checkExplored(self, center):
         r, c = center
         flag = True
@@ -323,85 +296,48 @@ class Exploration:
         distanceShort = 3
         distanceLong = 5
         if self.robot.direction == NORTH:
-            # If r = 5, c = 8, distanceShort = 3 and distanceLong = 5
-            # zip([r-1]*distanceShort, range(c+2, c+distanceShort+2))
-            # gives [(4, 10), (4, 11), (4, 12)]
             inds.append(zip([r-1]*distanceShort, range(c+2, c+distanceShort+2)))
-            # zip([r+1]*distanceLong, range(c+2, c+distanceLong+2))
-            # gives [(6, 10), (6, 11), (6, 12), (6, 13), (6, 14)]
             inds.append(zip([r+1]*distanceLong, range(c+2, c+distanceLong+2)))
-            # zip([r]*distanceLong, range(c-distanceLong-1, c-1))[::-1]
-            # gives [(5, 6), (5, 5), (5, 4), (5, 3), (5, 2)]
-            inds.append(zip([r]*distanceLong, range(c-distanceLong-1, c-1))[::-1])
-        elif self.robot.direction == EAST:
-            # If r = 5, c = 8, distanceShort = 3 and distanceLong = 5
-            # zip(range(r+2, r+distanceShort+2), [c+1]*distanceShort)
-            # [(7, 9), (8, 9), (9, 9)]
-            inds.append(zip(range(r+2, r+distanceShort+2), [c+1]*distanceShort))
-            # zip(range(r+2, r+distanceLong+2), [c-1]*distanceLong)
-            # gives [(7, 7), (8, 7), (9, 7), (10, 7), (11, 7)]
-            inds.append(zip(range(r+2, r+distanceLong+2), [c-1]*distanceLong))
-            # zip(range(r-distanceLong-1, r-1), [c]*distanceLong)[::-1]
-            # gives [(3, 8), (2, 8), (1, 8), (0, 8), (-1, 8)]
-            inds.append(zip(range(r-distanceLong-1, r-1), [c]*distanceLong)[::-1])
-        elif self.robot.direction == WEST:
-            # zip(range(r-distanceShort-1, r-1), [c-1]*distanceShort)[::-1]
-            # gives [(3, 7), (2, 7), (1, 7)]
-            inds.append(zip(range(r-distanceShort-1, r-1), [c-1]*distanceShort)[::-1])
-            # zip(range(r-distanceLong-1, r-1), [c+1]*distanceLong)[::-1]
-            # gives [(3, 9), (2, 9), (1, 9), (0, 9), (-1, 9)]
-            inds.append(zip(range(r-distanceLong-1, r-1), [c+1]*distanceLong)[::-1])
-            # zip(range(r+2, r+distanceLong+2), [c]*distanceLong)
-            # gives [(7, 8), (8, 8), (9, 8), (10, 8), (11, 8)]
-            inds.append(zip(range(r+2, r+distanceLong+2), [c]*distanceLong))
-        else: # self.direction == SOUTH
-            # zip([r+1]*distanceShort, range(c-distanceShort-1, c-1))[::-1]
-            # gives [(6, 6), (6, 5), (6, 4)]
-            inds.append(zip([r+1]*distanceShort, range(c-distanceShort-1, c-1))[::-1])
-            # zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1]
-            # gives [(4, 6), (4, 5), (4, 4), (4, 3), (4, 2)]
             inds.append(zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1])
-            # zip([r]*distanceLong, range(c+2, c+distanceLong+2))
-            # [(5, 10), (5, 11), (5, 12), (5, 13), (5, 14)]
-            inds.append(zip([r]*distanceLong, range(c+2, c+distanceLong+2)))
-        # For each list of coordinates
+        elif self.robot.direction == EAST:
+            inds.append(zip(range(r+2, r+distanceShort+2), [c+1]*distanceShort))
+            inds.append(zip(range(r+2, r+distanceLong+2), [c-1]*distanceLong))
+            inds.append(zip(range(r-distanceLong-1, r-1), [c+1]*distanceLong)[::-1])
+        elif self.robot.direction == WEST:
+            inds.append(zip(range(r-distanceShort-1, r-1), [c-1]*distanceShort)[::-1])
+            inds.append(zip(range(r-distanceLong-1, r-1), [c+1]*distanceLong)[::-1])
+            inds.append(zip(range(r+2, r+distanceLong+2), [c-1]*distanceLong))
+        else:
+            inds.append(zip([r+1]*distanceShort, range(c-distanceShort-1, c-1))[::-1])
+            inds.append(zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1])
+            inds.append(zip([r+1]*distanceLong, range(c+2, c+distanceLong+2)))
         for sensor in inds:
             if flag:
-                # For each coordinate
                 for (x, y) in sensor:
-                    # If x coordinate is outside the unexplored boundaries
-                    # or x coordinate is equal to upper limit of unexplored boundaries in terms of row
-                    # or if y is outside the unexplored boundaries
-                    # or if y is equal to upper limit of unexplored boundaries in terms of column
-                    # of if the coordinate is an obstacle
-                    # break out of the for loop, where flag will still be true
                     if (x < self.virtualWall[0] or x == self.virtualWall[2] or
                             y < self.virtualWall[1] or y == self.virtualWall[3] or
                             self.currentMap[x, y] == 2):
                         break
-                    # If the coordinate has a value of 0, indicating that it is unexplored
-                    # Set flag to be False and break out of the loop
                     elif (self.currentMap[x, y] == 0):
                         flag = False
                         break
-        # return final value of flag
         return flag
 
 
     def moveStep(self, sensor_vals=None):
         """Moves the robot one step for exploration
-
         Returns:
             bool: True is the map is fully explored
         """
-        # If sensor values are given, update self.exploredMap
         if (sensor_vals):
             self.robot.getSensors(sensor_vals)
         else:
             self.robot.getSensors()
+
         move = self.nextMove()
+
+        # check if percentage of explored area is 100 or not
         self.getExploredArea()
-        # If full coverage
         if (self.exploredArea == 100):
             return move, True
         else:
@@ -410,36 +346,61 @@ class Exploration:
     def explore(self):
         """Runs the exploration till the map is fully explored of time runs out
         """
-        print "Starting exploration ..."
+        print ("Starting exploration ...")
         startTime = time.time()
         endTime = startTime + self.timeLimit
 
         while(time.time() <= endTime):
             if (self.moveStep()):
-                print "Exploration completed !"
+                print ("Exploration completed !")
                 return
 
-        print "Time over !"
+        print ("Time over !")
         return
 
-    # Get valid and explored neighbours of unexplored spaces
+
+
     def getExploredNeighbour(self):
-        locs = np.where(self.currentMap == 0)
-        self.virtualWall = [np.min(locs[0]), np.min(locs[1]), np.max(locs[0])+1, np.max(locs[1])+1]
-        if ((self.virtualWall[2]-self.virtualWall[0] < 3) and self.virtualWall[2] < MAX_ROWS-3):
+
+        # initial virtual wall = [0, 0, MAX_ROWS, MAX_COLS]
+
+        # returns all location where current map is unexplored, with x coordinate in one array and y coordinate in different array
+        locs = np.where(self.currentMap == 0)  
+        # forms a virtual arena of unexplored area as rectangle
+        self.virtualWall = [np.min(locs[0]), np.min(locs[1]), np.max(locs[0])+1, np.max(locs[1])+1]  
+        
+        if ((self.virtualWall[2]-self.virtualWall[0] < 3) and self.virtualWall[2] < MAX_ROWS-3): 
+            # if there is more than 3 blocks between this new wall and the actual arean wall, we move the virtual wall 3 blocks away from the top of areana to 
+            # accomodaate the size of the robot
+            # new virtual arena is    [ unexplored rows +3  x  unexplored column]
             self.virtualWall[2] += 3
-        locs = np.asarray(zip(locs[0], locs[1]))
+
+        locs = np.asarray(zip(locs[0], locs[1])) 
+        # converts locs back into unexplored coordinates
+
         cost = np.abs(locs[:, 0] - self.robot.center[0]) + np.abs(locs[:, 1] - self.robot.center[1])
         cost = cost.tolist()
+        # for each coordinate the cost is (x- center_x   + y- center_y) 
+        # the distance of the neighbour away from the center of robot 
+
         locs = locs.tolist()
+
         while (cost):
-            position = np.argmin(cost)
+            position = np.argmin(cost) # position gives index of minimum cost
+
             coord = locs.pop(position)
             cost.pop(position)
+
             neighbours = np.asarray([[-2, 0], [2, 0], [0, -2], [0, 2]]) + coord
-            neighbours = self.__validInds(neighbours)
+            neighbours = self.__validInds(neighbours) # check if the coordinates in the list are valid or not
+
             for neighbour in neighbours:
+                # added a new item to the exploredNeighbours dictionary
                 if (neighbour not in self.exploredNeighbours):
                     self.exploredNeighbours[neighbour] = True
+
+#------------------->might have to check if this statement is outsode the if statement/ while loop or not!!!!!
                     return neighbour
+
+                    
         return None

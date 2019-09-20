@@ -13,7 +13,7 @@ class Exploration:
 
     Attributes:
         currentMap (Numpy array): To store the current state of the exploration map
-        exploredArea (int): Count of the number of cells explored
+        exploredArea (float): Percentage of arena explored
         robot (Robot): Instance of the Robot class
         sensors (list of Numpy arrays): Readings from all sensors
         timeLimit (int): Maximum time allowed for exploration
@@ -30,6 +30,7 @@ class Exploration:
         self.timeLimit = timeLimit
         self.exploredArea = 0
         self.currentMap = np.zeros([20, 15])
+        # call class according to running simulator or real run
         if sim:
             from Simulator import Robot
             self.robot = Robot(self.currentMap, EAST, START, realMap)
@@ -39,7 +40,8 @@ class Exploration:
             self.robot = Robot(self.currentMap, EAST, START)
         self.exploredNeighbours = dict()
         self.sim = sim
-        self.calibrateLim = calibrateLim
+        # self.calibrateLim = calibrateLim
+        # initialize as boundary of the arena
         # Set the limits of unexplored area on the map
         self.virtualWall = [0, 0, MAX_ROWS, MAX_COLS]
 
@@ -90,12 +92,12 @@ class Exploration:
     def getExploredArea(self):
         """Updates the total number of cells explored at the current state
         """
+        # returns percent of map explored
         self.exploredArea = (np.sum(self.currentMap != 0)/300.0)*100
 
 
     def nextMove(self):
-        """Decides which direction is free and commands the robot the next action
-        """
+        # Decides which direction is free and commands the robot the next action
         move = []
         # multi step
         # Number of spaces in front of the robot which is free and where there are obstacles on the right
@@ -269,7 +271,7 @@ class Exploration:
         and all spaces detectable by the left middle, right top and right bottom sensors at these spaces have been explored
         """
         r, c = self.robot.center
-        counter = 0
+        counter = 0 # Keeps track of number of moves the robot can make that are directly in front
         # If robot is facing north and three spaces immediately to the north of robot is within unexplored boundaries
         # and has no obstacles
         if self.robot.direction == NORTH and self.validMove([[r-2, c], [r-2, c-1], [r-2, c+1]]):
@@ -424,21 +426,32 @@ class Exploration:
 
     # Get valid and explored neighbours of unexplored spaces
     def getExploredNeighbour(self):
+        # initial virtual wall = [0, 0, MAX_ROWS, MAX_COLS]
+
+        # returns all location where current map is unexplored, with x coordinate in one array and y coordinate in different array
         locs = np.where(self.currentMap == 0)
+        # forms a virtual arena of unexplored area as rectangle
         self.virtualWall = [np.min(locs[0]), np.min(locs[1]), np.max(locs[0])+1, np.max(locs[1])+1]
         if ((self.virtualWall[2]-self.virtualWall[0] < 3) and self.virtualWall[2] < MAX_ROWS-3):
             self.virtualWall[2] += 3
+        # if there is more than 3 blocks between this new wall and the actual arean wall, we move the virtual wall 3 blocks away from the top of areana to
+        # accomodaate the size of the robot
+        # new virtual arena is    [ unexplored rows +3  x  unexplored column]
         locs = np.asarray(zip(locs[0], locs[1]))
+        # converts locs back into unexplored coordinates
         cost = np.abs(locs[:, 0] - self.robot.center[0]) + np.abs(locs[:, 1] - self.robot.center[1])
         cost = cost.tolist()
+        # for each coordinate the cost is (x- center_x   + y- center_y)
+        # the distance of the neighbour away from the center of robot
         locs = locs.tolist()
         while (cost):
-            position = np.argmin(cost)
+            position = np.argmin(cost) # position gives index of minimum cost
             coord = locs.pop(position)
             cost.pop(position)
             neighbours = np.asarray([[-2, 0], [2, 0], [0, -2], [0, 2]]) + coord
-            neighbours = self.__validInds(neighbours)
+            neighbours = self.__validInds(neighbours) # check if the coordinates in the list are valid or not
             for neighbour in neighbours:
+                # added a new item to the exploredNeighbours dictionary
                 if (neighbour not in self.exploredNeighbours):
                     self.exploredNeighbours[neighbour] = True
                     return neighbour

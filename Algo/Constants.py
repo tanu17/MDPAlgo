@@ -8,10 +8,17 @@ EAST = 2
 SOUTH = 3
 WEST = 4
 
-# MOVEMENTS
-LEFT = "A"
-RIGHT = "D"
-FORWARD = "W"
+# COMMANDS
+LEFT = "A" # Rotate counter-clockwise by 90 degrees
+RIGHT = "D" # Rotate clockwise by 90 degrees
+FORWARD = "W" # Move forward 10cm
+FORWARDFAST = "F" # Move forward quickly by 10cm
+BACKWARDS = "S" # Move backwards by 10cm
+BACKWARDSFAST = "B" # Move backwards quickly by 10cm
+SENSOR = "L" # Get sensor readings from Arduino
+ALIGNRIGHT = "P" # Tell robot to align itself using obstacles on the right
+ALIGNFRONT = "O" # Tell robot to align itself using obstacles on the front
+
 
 # Arena is 200cm by 150cm
 # We take each 10cm by 10cm square as a spot

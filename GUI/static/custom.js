@@ -149,8 +149,9 @@ document.addEventListener('DOMContentLoaded', function initialize(e) {
 	document.getElementById('exp_start').addEventListener('click', function(e){
 		document.getElementById('explore').style.display = 'none';
 		var step = document.getElementById('time_step').value;
-		var limit = document.getElementById('time').value;
-		var coverage = document.getElementById('percentage').value;
+		step = Number(1/step)
+		var limit = Number(document.getElementById('time').value);
+		var coverage = Number(document.getElementById('percentage').value);
 		var r = new XMLHttpRequest();
 		r.open("GET", "/start?step="+step+"&limit="+limit+"&coverage="+coverage);
 		r.send();
@@ -188,6 +189,30 @@ document.addEventListener('DOMContentLoaded', function initialize(e) {
 	    	console.log(evt);
 	    }
 	}
+
+	var timeStepSlider = document.getElementById("time_step");
+	var timeStepOutput = document.getElementById("time_step_value");
+	timeStepOutput.innerHTML = timeStepSlider.value;
+
+	timeStepSlider.oninput = function() {
+        timeStepOutput.innerHTML = this.value;
+	}
+	
+	var timeLimitSlider = document.getElementById("time");
+	var timeLimitOutput = document.getElementById("time_limit_value");
+	timeLimitOutput.innerHTML = timeLimitSlider.value;
+
+	timeLimitSlider.oninput = function() {
+        timeLimitOutput.innerHTML = this.value;
+	}
+	
+	var percentageSlider = document.getElementById("percentage");
+	var percentageOutput = document.getElementById("percentage_value");
+	percentageOutput.innerHTML = percentageSlider.value;
+
+	percentageSlider.oninput = function() {
+        percentageOutput.innerHTML = this.value;
+    }
 
 	draw(map);
 	wsConnect();

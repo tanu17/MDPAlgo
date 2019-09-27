@@ -14,7 +14,14 @@
 				<div id="mapname" style="display: none">
 					<form>
 					  <p class="headings" style="text-align: left;">Name</p>
-					  <input type="text" name="name" value='map.txt' id='map-name'>
+					  <select name="name" value='map.txt' id='map-name'>
+						<option value='map.txt'>map.txt</option>
+						  <option value="sample1.txt">sample1.txt</option>
+						  <option value="sample2.txt">sample2.txt</option>
+						  <option value="sample3.txt">sample3.txt</option>
+						  <option value="sample4.txt">sample4.txt</option>
+						  <option value="sample5.txt">sample5.txt</option>
+					  </select>
 					  <br><br>
 					  <input id="loadMap" type="submit" value="Submit">
 					</form> 
@@ -23,13 +30,16 @@
 				<div id="explore" style="display: none;">
 					<form>
 					  <p class="headings" style="text-align: left;">TIME STEP</p>
-					  <input type="text" name="t_s" value='0.1' id='time_step'>
+                        <input type="range" min="1" max="10" value="5" class="slider" name="t_s" id="time_step">
+						<p style="color: azure">Number of steps per second: <span id="time_step_value"></span></p>
 					  <br>
 					  <p class="headings" style="text-align: left;">TIME LIMIT</p>
-					  <input type="time" name="time_limit" value="00:00:30" step="1" id='time'>
+					  	<input type="range" min="1" max="60" value="30" class="slider" name="time_limit" id="time">
+						<p style="color: azure"><span id="time_limit_value"></span> s</p>
 					  <br>
 					  <p class="headings" style="text-align: left;">COVERAGE LIMIT</p>
-					  <input type="number" name="cover" value='100' id='percentage' min='0' max='100'>
+					  	<input type="range" min="0" max="100" value="100" class="slider" name="cover" id="percentage">
+						<p style="color: azure"><span id="percentage_value"></span> %</p>
 					  <br><br>
 					  <input id="exp_start" type="submit" value="Submit">
 					</form> 

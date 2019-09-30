@@ -315,12 +315,13 @@ class Robot:
 
     def descriptor_2(self):
         bits = ''
-        for row in self.exploredMap[::-1, :]:
+        for row in self.exploredMap[::, :]:
             for bit in row:
                 if bit == 2:
                     bits += '1'
-                elif bit != 0:
+                elif bit != 2:
                     bits += '0'
         bits += '0'*(4 - len(bits) % 4)
         hex_str = ['%X' % int(bits[i:i+4], 2) for i in range(0, len(bits)-3, 4)]
+        hex_str = hex_str[:-1]
         return ''.join(hex_str)

@@ -1,6 +1,6 @@
 import numpy as np
 
-from Constants import MAX_ROWS, MAX_COLS, NORTH, SOUTH, EAST, WEST, RIGHT, LEFT, BOTTOM_LEFT_CORNER, BOTTOM_RIGHT_CORNER, TOP_RIGHT_CORNER, TOP_LEFT_CORNER
+from Constants import MAX_ROWS, MAX_COLS, NORTH, SOUTH, EAST, WEST, RIGHT, LEFT, BOTTOM_LEFT_CORNER, BOTTOM_RIGHT_CORNER, TOP_RIGHT_CORNER, TOP_LEFT_CORNER, ALIGNRIGHT, ALIGNFRONT
 
 
 class Robot:
@@ -283,40 +283,40 @@ class Robot:
         if self.direction == NORTH:
             for i in range(2, 3):
                 if ((r-i) < 0): # At the upper boundary of the arena
-                    flag = [True, 'C']
+                    flag = [True, ALIGNFRONT]
                     break
                 # Not at the upper boundary but there is an obstacle directly at the robot's
                 # front centre, front left and front right
                 elif ((r - i) >= 0 and (self.exploredMap[r-i][c-1] == 2 and
                       self.exploredMap[r-i][c] == 2 and self.exploredMap[r-i][c+1] == 2)):
-                    flag = [True, 'C']
+                    flag = [True, ALIGNFRONT]
                     break
         elif self.direction == WEST:
             for i in range(2, 3):
                 if ((c-i) < 0):
-                    flag = [True, 'C']
+                    flag = [True, ALIGNFRONT]
                     break
                 elif ((c-i) >= 0 and (self.exploredMap[r-1][c-i] == 2 and
                       self.exploredMap[r][c-i] == 2 and self.exploredMap[r+1][c-i] == 2)):
-                    flag = [True, 'C']
+                    flag = [True, ALIGNFRONT]
                     break
         elif self.direction == EAST:
             for i in range(2, 3):
                 if ((c + i) == MAX_COLS):
-                    flag = [True, 'C']
+                    flag = [True, ALIGNFRONT]
                     break
                 elif ((c + i) < MAX_COLS and (self.exploredMap[r-1][c+i] == 2 and
                       self.exploredMap[r][c+i] == 2 and self.exploredMap[r+1][c+i] == 2)):
-                    flag = [True, 'C']
+                    flag = [True, ALIGNFRONT]
                     break
         else:
             for i in range(2, 3):
                 if ((r+i) == MAX_ROWS):
-                    flag = [True, 'C']
+                    flag = [True, ALIGNFRONT]
                     break
                 elif ((r+i) < MAX_ROWS and (self.exploredMap[r+i][c-1] == 2 and
                       self.exploredMap[r+i][c] == 2 and self.exploredMap[r+i][c+1] == 2)):
-                    flag = [True, 'C']
+                    flag = [True, ALIGNFRONT]
                     break
         return flag
 
@@ -327,38 +327,38 @@ class Robot:
         if self.direction == NORTH:
             for i in range(2, 3):
                 if ((c + i) == MAX_COLS):
-                    flag = [True, 'R']
+                    flag = [True, ALIGNRIGHT]
                     break
                 elif ((c + i) < MAX_COLS and (self.exploredMap[r-1, c+i] == 2 and
                       self.exploredMap[r+1, c+i] == 2)):
-                    flag = [True, 'R']
+                    flag = [True, ALIGNRIGHT]
                     break
         elif self.direction == WEST:
             for i in range(2, 3):
                 if ((r - i) < 0):
-                    flag = [True, 'R']
+                    flag = [True, ALIGNRIGHT]
                     break
                 elif ((r - i) >= 0 and (self.exploredMap[r-i, c-1] == 2 and
                       self.exploredMap[r-i, c+1] == 2)):
-                    flag = [True, 'R']
+                    flag = [True, ALIGNRIGHT]
                     break
         elif self.direction == EAST:
             for i in range(2, 3):
                 if ((r + i) == MAX_ROWS):
-                    flag = [True, 'R']
+                    flag = [True, ALIGNRIGHT]
                     break
                 elif ((r + i) < MAX_ROWS and (self.exploredMap[r+i, c-1] == 2 and
                       self.exploredMap[r+i, c+1] == 2)):
-                    flag = [True, 'R']
+                    flag = [True, ALIGNRIGHT]
                     break
         else:
             for i in range(2, 3):
                 if ((c-i) < 0):
-                    flag = [True, 'R']
+                    flag = [True, ALIGNRIGHT]
                     break
                 elif ((c - i) >= 0 and (self.exploredMap[r-1, c-i] == 2 and
                       self.exploredMap[r+1, c-i] == 2)):
-                    flag = [True, 'R']
+                    flag = [True, ALIGNRIGHT]
                     break
         return flag
 
@@ -420,12 +420,13 @@ class Robot:
 
     def descriptor_2(self):
         bits = ''
-        for row in self.exploredMap[::-1, :]:
+        for row in self.exploredMap[:, :]:
             for bit in row:
                 if bit == 2:
                     bits += '1'
-                elif bit != 0:
+                elif bit != 2:
                     bits += '0'
         bits += '0'*(4 - len(bits) % 4)
         hex_str = ['%X' % int(bits[i:i+4], 2) for i in range(0, len(bits)-3, 4)]
+        hex_str = hex_str[:-1]
         return ''.join(hex_str)

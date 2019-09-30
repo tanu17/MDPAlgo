@@ -12,7 +12,7 @@ from threading import Thread
 from tornado.options import define, options
 from Algo.Exploration import Exploration
 from Algo.FastestPath import FastestPath
-from Algo.Constants import START, GOAL, NORTH, WEST
+from Algo.Constants import START, GOAL, NORTH, WEST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT
 
 # Global Variables
 define("port", default=8888, help="run on the given port", type=int)
@@ -262,27 +262,27 @@ def markMap(curMap, waypoint):
 
 
 # Function to shorten muliple forward commands into a single command
-def combineMovement(movement):
-    counter = 0
-    shortMove = []
-    while (counter < len(movement)):
-        if (counter < len(movement)-7) and all(x == 'W' for x in movement[counter:counter+7]):
-            shortMove.append('Q')
-            counter += 7
-        elif (counter < len(movement)-5) and all(x == 'W' for x in movement[counter:counter+5]):
-            shortMove.append('K')
-            counter += 5
-        elif (counter < len(movement)-3) and all(x == 'W' for x in movement[counter:counter+3]):
-            shortMove.append('X')
-            counter += 3
-        elif (counter < len(movement)-2) and all(x == 'W' for x in movement[counter:counter+2]):
-            shortMove.append('P')
-            counter += 2
-        else:
-            shortMove.append(movement[counter])
-            counter += 1
-    shortMove += movement[counter:]
-    return shortMove
+# def combineMovement(movement):
+#     counter = 0
+#     shortMove = []
+#     while (counter < len(movement)):
+#         if (counter < len(movement)-7) and all(x == 'W' for x in movement[counter:counter+7]):
+#             shortMove.append('Q')
+#             counter += 7
+#         elif (counter < len(movement)-5) and all(x == 'W' for x in movement[counter:counter+5]):
+#             shortMove.append('K')
+#             counter += 5
+#         elif (counter < len(movement)-3) and all(x == 'W' for x in movement[counter:counter+3]):
+#             shortMove.append('X')
+#             counter += 3
+#         elif (counter < len(movement)-2) and all(x == 'W' for x in movement[counter:counter+2]):
+#             shortMove.append('P')
+#             counter += 2
+#         else:
+#             shortMove.append(movement[counter])
+#             counter += 1
+#     shortMove += movement[counter:]
+#     return shortMove
 
 
 def fastestPath(fsp, goal, area, waypoint):
@@ -331,6 +331,41 @@ def output_formatter(msg, movement):
         movement = movement.tolist()
     movement = map(str, movement)
     return msg+'|'+'|'.join(movement)
+
+def android_message_formatter(msg, array):
+    if not isinstance(array, list):
+        array = array.tolist()
+    return "B" + msg + '|'.join(map(str, array))
+
+def arduino_message_formatter(movement, getSensor=True):
+    if not isinstance(movement, list):
+        movement = movement.tolist()
+    string = "".join(map(str, movement))
+    res = ""
+
+    count = 1
+
+    #Add in first character
+    res += string[0]
+
+    #Iterate through loop, skipping last one
+    for i in range(len(string)-1):
+        if(string[i] == string[i+1]):
+            count+=1
+            if count == 9:
+                res += str(count)
+                res += string[i+1]
+                count = 1
+        else:
+            res += str(count)
+            res += string[i+1]
+            count = 1
+    #print last one
+    res += str(count)
+    if getSensor == True:
+        return "A" + res + SENSOR + "1"
+    else:
+        return "A" + res
 
 
 class RPi(threading.Thread):
@@ -382,7 +417,7 @@ class RPi(threading.Thread):
                     # If not 100% coverage
                     if (not current[1]):
                         time_t = time.time()
-                        move = combineMovement(current[0]) # Shorten multiple forward commands
+                        move = current[0]
                         elapsedTime = round(time.time()-t_s, 2)
                         update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head,
                                START, GOAL, elapsedTime)
@@ -404,7 +439,7 @@ class RPi(threading.Thread):
                                                       exp.robot.direction, None, sim=False)
                                     # Move and update robot virtually
                                     fastestPath(fsp, neighbour, exp.exploredArea, None)
-                                    move.extend(combineMovement(fsp.movement))
+                                    move.extend(fsp.movement)
                                     exp.robot.phase = 2
                                     exp.robot.center = neighbour
                                     exp.robot.head = fsp.robot.head
@@ -426,7 +461,7 @@ class RPi(threading.Thread):
                                         # Move the robot vrtually
                                         fastestPath(fsp, neighbour, exp.exploredArea, None)
                                         # Shorten multiple forward commands and append to move
-                                        move.extend(combineMovement(fsp.movement))
+                                        move.extend(fsp.movement)
                                         exp.robot.phase = 2
                                         exp.robot.center = neighbour
                                         exp.robot.head = fsp.robot.head
@@ -437,27 +472,23 @@ class RPi(threading.Thread):
                         ######################################
                         ###############Update this accordingly
                         ######################################
-                        global mdfCounter
-                        if mdfCounter == 3:
-                            # get_msg is the message to be sent to Rpi
-                            get_msg = output_formatter('MOVEMENT', [str(exp.robot.descriptor_1()),
-                                                       str(exp.robot.descriptor_2())] + move + ['S'])
-                            mdfCounter = 0
-                        # When mdfCounter is 0, 1 or 2
-                        else:
-                            get_msg = output_formatter('MOVEMENT', [str(0), str(0)] + move + ['S'])
-                            mdfCounter += 1
+                        # arduino_msg and android_msg is the message to be sent to Rpi
+                        arduino_msg = arduino_message_formatter(move)
+                        android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]]))])
                         print 'Time 2: %s s' % (time.time() - time_t)
                     # If 100% coverage
                     else:
                         # Send movement to Rpi
-                        move = combineMovement(current[0])
-                        get_msg = output_formatter('MOVEMENT', [str(exp.robot.descriptor_1()),
-                                                   str(exp.robot.descriptor_2())] + move)
-                        self.client_socket.send(get_msg)
-                        print ('Sent %s to RPi' % (get_msg))
+                        move = current[0]
+                        arduino_msg = arduino_message_formatter(move)
+                        android_msg = android_message_formatter('DONE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]]))])
+                        self.client_socket.send(arduino_msg)
+                        print ('Sent %s to RPi' % (arduino_msg))
+                        self.client_socket.send(android_msg)
+                        print ('Sent %s to RPi' % (android_msg))
                         log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))
-                        log_file.write('Sent %s to RPi\n\n' % (get_msg))
+                        log_file.write('Sent %s to RPi\n\n' % (arduino_msg))
+                        log_file.write('Sent %s to RPi\n\n' % (android_msg))
                         log_file.flush()
                         time.sleep(2)
                         # Inform front end that exploration is complete
@@ -471,50 +502,51 @@ class RPi(threading.Thread):
                                           None, sim=False)
                         logger('Fastest Path Started !')
                         fastestPath(fsp, START, exp.exploredArea, None)
-                        move = combineMovement(fsp.movement)
+                        move = fsp.movement
                         currentMap = exp.currentMap
                         global direction
                         ######################################
                         ###############Update this accordingly
                         ######################################
                         if (fsp.robot.direction == WEST):
-                            calibrate_move = ['A', 'L', 'O']
+                            calibrate_move = [RIGHT, ALIGNRIGHT, ALIGNFRONT, RIGHT, RIGHT]
                         else:
-                            calibrate_move = ['L', 'O']
+                            calibrate_move = [ALIGNRIGHT, ALIGNFRONT, RIGHT, RIGHT]
                         # After calibrating robot such that it faces North, set direction as North
                         direction = NORTH
                         ######################################
                         ###############Update this accordingly
                         ######################################
-                        get_msg = output_formatter('DONE', [str(exp.robot.descriptor_1()),
-                                                   str(exp.robot.descriptor_2())] + ['N'] + move +
-                                                   calibrate_move)
-                        self.client_socket.send(get_msg)
+                        arduino_msg = arduino_message_formatter(move + calibrate_move, getSensor=False)
+                        android_msg = android_message_formatter('ALIGN', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]]))])
                         time.sleep(1)
-                        ######################################
-                        ###############Update this accordingly
-                        ######################################
-                        get_msg = output_formatter('MOVEMENT', [str(exp.robot.descriptor_1()),
-                                                   str(exp.robot.descriptor_2())] + ['N'] + move +
-                                                   calibrate_move)
-                    self.client_socket.send(get_msg)
-                    print ('Sent %s to RPi' % (get_msg))
-                    time_t = time.time()
+                    self.client_socket.send(arduino_msg)
+                    print ('Sent %s to RPi' % (arduino_msg))
+                    self.client_socket.send(android_msg)
+                    print ('Sent %s to RPi' % (android_msg))
                     log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))
-                    log_file.write('Sent %s to RPi\n\n' % (get_msg))
+                    log_file.write('Sent %s to RPi\n\n' % (arduino_msg))
+                    log_file.write('Sent %s to RPi\n\n' % (android_msg))
                     log_file.flush()
                 # Start fastest path
                 elif (split_data[0] == 'FASTEST'):
-                    print currentMap
                     fsp = FastestPath(currentMap, START, GOAL, direction, waypoint, sim=False)
                     current_pos = fsp.robot.center
                     fastestPath(fsp, GOAL, 300, waypoint)
                     # move = fsp.movement
-                    move = combineMovement(fsp.movement)
-                    get_msg = output_formatter('FASTEST', ['N'] + move + ['C'])
-                    self.client_socket.send(get_msg)
-                    print ('Sent %s to RPi' % (get_msg))
-                    # To move the robot manually
+                    move = fsp.movement
+                    path = fsp.path
+                    arduino_msg = arduino_message_formatter(move, getSensor=False)
+                    android_msg = android_message_formatter('FASTEST', path)
+                    self.client_socket.send(arduino_msg)
+                    print ('Sent %s to RPi' % (arduino_msg))
+                    self.client_socket.send(android_msg)
+                    print ('Sent %s to RPi' % (android_msg))
+                    log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))
+                    log_file.write('Sent %s to RPi\n\n' % (arduino_msg))
+                    log_file.write('Sent %s to RPi\n\n' % (android_msg))
+                    log_file.flush()
+                # To move the robot manually
                 elif (split_data[0] == 'MANUAL'):
                     manual_movement = split_data[1:]
                     for move in manual_movement:

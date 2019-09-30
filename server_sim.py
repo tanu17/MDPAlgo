@@ -188,7 +188,7 @@ def exploration(exp, limit, coverage):
         exp (Exploration): New instance of the exploration class
     """
     global currentMap, area
-    time_limit = limit
+    time_limit = float(limit)
     elapsedTime = 0
     update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head, START, GOAL, 0)
     logger('Exploration Started !')

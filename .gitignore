@@ -1,0 +1,7 @@
+/.vscode
+/.idea
+/Algo/__init__.pyc
+/Algo/Constants.pyc
+/Algo/Exploration.pyc
+/Algo/FastestPath.pyc
+/Algo/Simulator.pyc

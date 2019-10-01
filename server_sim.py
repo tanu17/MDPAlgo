@@ -10,7 +10,8 @@ import threading
 from tornado.options import define, options
 from Algo.Exploration import Exploration
 from Algo.FastestPath import FastestPath
-from Algo.Constants import START, GOAL, NORTH
+from Algo.Constants import START, GOAL, NORTH, FORWARD, FORWARDFAST
+
 
 # Define options.port using define method from tornado.options
 define("port", default=8888, help="run on the given port", type=int)

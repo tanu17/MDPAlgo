@@ -149,6 +149,22 @@ class Robot:
             vals = vals + [None]*(len(inds)-len(vals)) # Append values of None after the obstacle
         return vals
 
+    def getLongValue(self, inds):
+        counter = 0
+        for (r, c) in inds:
+            counter += 1
+            if (0 <= r < MAX_ROWS) and (0 <= c < MAX_COLS):
+                if self.map[r][c] == 2:
+                    break
+            else:
+                break
+        if(counter == 1 or counter == 5):
+            return [None] * len(inds)
+        else:
+            return self.getValue(inds)
+            
+
+
     def getSensors(self):
         """Generated indices to get values from sensors and gets the values using getValue() function.
            For this simulator it is assumed that the sensors can get values up a distance of 4 cells
@@ -208,13 +224,13 @@ class Robot:
 
         # Right Bottom
         if self.direction == NORTH:
-            self.getValue(zip([r+1]*distanceLong, range(c+2, c+distanceLong+2)))
+            self.getValue(zip([r+1]*distanceShort, range(c+2, c+distanceShort+2)))
         elif self.direction == EAST:
-            self.getValue(zip(range(r+2, r+distanceLong+2), [c-1]*distanceLong))
+            self.getValue(zip(range(r+2, r+distanceShort+2), [c-1]*distanceShort))
         elif self.direction == WEST:
-            self.getValue(zip(range(r-distanceLong-1, r-1), [c+1]*distanceLong)[::-1])
+            self.getValue(zip(range(r-distanceShort-1, r-1), [c+1]*distanceShort)[::-1])
         else:
-            self.getValue(zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1])
+            self.getValue(zip([r-1]*distanceShort, range(c-distanceShort-1, c-1))[::-1])
 
         # Left Middle
         if self.direction == NORTH:

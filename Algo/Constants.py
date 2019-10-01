@@ -3,10 +3,10 @@
 import numpy as np
 
 # DIRECTIONS
-NORTH = 1
-EAST = 2
-SOUTH = 3
-WEST = 4
+NORTH = "Up"
+EAST = "Right"
+SOUTH = "Down"
+WEST = "Left"
 
 # COMMANDS
 LEFT = "A" # Rotate counter-clockwise by 90 degrees

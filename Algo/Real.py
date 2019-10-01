@@ -67,13 +67,13 @@ class Robot:
             # value = round(value - adjustment_value, -1)
         vals = []
         # Distance is the number of spaces we assume that the sensor is accurate
-        if (value >= distance*10):
+        if (value >= distance):
             # If sensor value is greater than the range which we assume the sensor is accurate
             # just assume that there are no obstacles within that accurate range
             vals = [1]*distance
         else:
             # If the sensor detects an obstacle within the accurate range
-            value = int(value//10)
+            value = int(value)
             # Set coordinates to be marked to be only those coordinates up to the obstacle
             inds = inds[:value+1]
             # Set spaces with no obstacle to be explored (value of 1) and space with obstacle with value of 2

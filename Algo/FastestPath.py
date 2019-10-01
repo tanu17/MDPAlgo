@@ -1,7 +1,7 @@
 import copy
 import numpy as np
 
-from Constants import MAX_ROWS, MAX_COLS, NORTH, SOUTH, EAST, WEST, FORWARD, LEFT, RIGHT
+from Constants import MAX_ROWS, MAX_COLS, NORTH, SOUTH, EAST, WEST, FORWARD, LEFT, RIGHT, BACKWARDS
 
 
 class Node:
@@ -465,11 +465,15 @@ class FastestPath:
             self.exploredMap[tuple(ind)] = 6
 
     # Adds more movements to self.movement so that robot moves one space if possible
-    def moveStep(self):
+    def moveStep(self, backwards=False):
         """To take the fastest path, robot location and determine the next
         move for the robot to follow the path
         """
         movement = []
+        if(backwards == False):
+            move_command = BACKWARDS
+        else:
+            move_command = FORWARD
         # self.index is first initialised to 1 when the FastestPath class is first initialised
         # Moving one step will increase self.index by one, thereby making self.path[self.index]) go to the next space allong the path
         # If the next space in the path is not equal to robot's centre and hence, robot should move to the next space in the path
@@ -481,40 +485,40 @@ class FastestPath:
             if (diff[0] == -1 and diff[1] == 0):  # Going south
                 if self.robot.direction == NORTH:
                     # If robot is facing north, it needs to turn right twice and move forward once before it can move south by one space
-                    movement.extend((RIGHT, RIGHT, FORWARD))
+                    movement.extend((RIGHT, RIGHT, move_command))
                 elif self.robot.direction == EAST:
-                    movement.extend((RIGHT, FORWARD))
+                    movement.extend((RIGHT, move_command))
                 elif self.robot.direction == SOUTH:
-                    movement.append(FORWARD)
+                    movement.append(move_command)
                 else:
-                    movement.extend((LEFT, FORWARD))
+                    movement.extend((LEFT, move_command))
             elif (diff[0] == 0 and diff[1] == 1):  # Going west
                 if self.robot.direction == NORTH:
-                    movement.extend((LEFT, FORWARD))
+                    movement.extend((LEFT, move_command))
                 elif self.robot.direction == EAST:
-                    movement.extend((RIGHT, RIGHT, FORWARD))
+                    movement.extend((RIGHT, RIGHT, move_command))
                 elif self.robot.direction == SOUTH:
-                    movement.extend((RIGHT, FORWARD))
+                    movement.extend((RIGHT, move_command))
                 else:
-                    movement.append(FORWARD)
+                    movement.append(move_command)
             elif (diff[0] == 0 and diff[1] == -1):  # Going east
                 if self.robot.direction == NORTH:
-                    movement.extend((RIGHT, FORWARD))
+                    movement.extend((RIGHT, move_command))
                 elif self.robot.direction == EAST:
-                    movement.append(FORWARD)
+                    movement.append(move_command)
                 elif self.robot.direction == SOUTH:
-                    movement.extend((LEFT, FORWARD))
+                    movement.extend((LEFT, move_command))
                 else:
-                    movement.extend((RIGHT, RIGHT, FORWARD))
+                    movement.extend((RIGHT, RIGHT, move_command))
             else:  # Going north
                 if self.robot.direction == NORTH:
-                    movement.append(FORWARD)
+                    movement.append(move_command)
                 elif self.robot.direction == EAST:
-                    movement.extend((LEFT, FORWARD))
+                    movement.extend((LEFT, move_command))
                 elif self.robot.direction == SOUTH:
-                    movement.extend((RIGHT, RIGHT, FORWARD))
+                    movement.extend((RIGHT, RIGHT, move_command))
                 else:
-                    movement.extend((RIGHT, FORWARD))
+                    movement.extend((RIGHT, move_command))
             for move in movement:
                 self.robot.moveBot(move)
         # Add movements to self.movement

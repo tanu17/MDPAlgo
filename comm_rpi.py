@@ -12,7 +12,7 @@ from threading import Thread
 from tornado.options import define, options
 from Algo.Exploration import Exploration
 from Algo.FastestPath import FastestPath
-from Algo.Constants import START, GOAL, NORTH, WEST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT
+from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT
 
 # Global Variables
 define("port", default=8888, help="run on the given port", type=int)
@@ -179,8 +179,7 @@ def exploration(exp, limit, coverage):
         exp (Exploration): New instance of the exploration class
     """
     global currentMap, area
-    limit = map(int, str(limit).strip().split(':'))
-    time_limit = limit[0]*60*60 + limit[1]*60 + limit[2]
+    time_limit = float(limit)
     elapsedTime = 0
     update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head, START, GOAL, 0)
     logger('Exploration Started !')
@@ -285,11 +284,14 @@ def markMap(curMap, waypoint):
 #     return shortMove
 
 
-def fastestPath(fsp, goal, area, waypoint):
+def fastestPath(fsp, goal, area, waypoint, backwards=False):
     fsp.getFastestPath()
     logger(json.dumps(fsp.path))
     while (fsp.robot.center.tolist() != goal.tolist()):
-        fsp.moveStep()
+        if(backwards == False):
+            fsp.moveStep()
+        else:
+            fsp.moveStep(backwards=True)
         update(markMap(np.copy(fsp.exploredMap), waypoint), area, fsp.robot.center, fsp.robot.head,
                START, GOAL, 0)
     logger('Fastest Path Done !')
@@ -335,7 +337,7 @@ def output_formatter(msg, movement):
 def android_message_formatter(msg, array):
     if not isinstance(array, list):
         array = array.tolist()
-    return "B" + msg + '|'.join(map(str, array))
+    return "B" + msg + '|' + '|'.join(map(str, array))
 
 def arduino_message_formatter(movement, getSensor=True):
     if not isinstance(movement, list):
@@ -474,14 +476,14 @@ class RPi(threading.Thread):
                         ######################################
                         # arduino_msg and android_msg is the message to be sent to Rpi
                         arduino_msg = arduino_message_formatter(move)
-                        android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]]))])
+                        android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]])), exp.robot.direction])
                         print 'Time 2: %s s' % (time.time() - time_t)
                     # If 100% coverage
                     else:
                         # Send movement to Rpi
                         move = current[0]
                         arduino_msg = arduino_message_formatter(move)
-                        android_msg = android_message_formatter('DONE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]]))])
+                        android_msg = android_message_formatter('DONE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]])), exp.robot.direction])
                         self.client_socket.send(arduino_msg)
                         print ('Sent %s to RPi' % (arduino_msg))
                         self.client_socket.send(android_msg)
@@ -509,16 +511,16 @@ class RPi(threading.Thread):
                         ###############Update this accordingly
                         ######################################
                         if (fsp.robot.direction == WEST):
-                            calibrate_move = [RIGHT, ALIGNRIGHT, ALIGNFRONT, RIGHT, RIGHT]
+                            calibrate_move = [LEFT, ALIGNRIGHT, ALIGNFRONT]
                         else:
-                            calibrate_move = [ALIGNRIGHT, ALIGNFRONT, RIGHT, RIGHT]
+                            calibrate_move = [ALIGNRIGHT, ALIGNFRONT]
                         # After calibrating robot such that it faces North, set direction as North
-                        direction = NORTH
+                        direction = SOUTH
                         ######################################
                         ###############Update this accordingly
                         ######################################
                         arduino_msg = arduino_message_formatter(move + calibrate_move, getSensor=False)
-                        android_msg = android_message_formatter('ALIGN', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]]))])
+                        android_msg = android_message_formatter('ALIGN', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]])), exp.robot.direction])
                         time.sleep(1)
                     self.client_socket.send(arduino_msg)
                     print ('Sent %s to RPi' % (arduino_msg))
@@ -532,7 +534,7 @@ class RPi(threading.Thread):
                 elif (split_data[0] == 'FASTEST'):
                     fsp = FastestPath(currentMap, START, GOAL, direction, waypoint, sim=False)
                     current_pos = fsp.robot.center
-                    fastestPath(fsp, GOAL, 300, waypoint)
+                    fastestPath(fsp, GOAL, 300, waypoint, backwards=True)
                     # move = fsp.movement
                     move = fsp.movement
                     path = fsp.path

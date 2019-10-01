@@ -3,13 +3,21 @@ import time
 
 from Constants import NORTH, SOUTH, WEST, EAST, FORWARD, LEFT, RIGHT, START, MAX_ROWS, MAX_COLS, ALIGNFRONT, ALIGNRIGHT
 
+
+"""
+instead of forward use fastforward
+detect phantom blocks (if possible)
+implement backwards for fastest path ?!
+Use ultrasonic sensor instead of short/long sensor ---> not much time difference (tested in one map)
+
+"""
+
 class Exploration:
 
     """Implementation of the Right-Wall hugging algorithm for a maze solving
        robot.
        The implementation assumes that the robot starts at the bottom-left corner of the map,
        i.e. (MAX_ROWS - 2, 1). And the robot is facing North
-
 
     Attributes:
         currentMap (Numpy array): To store the current state of the exploration map
@@ -103,6 +111,7 @@ class Exploration:
         # Number of spaces in front of the robot which is free and where there are obstacles on the right
         # and all spaces detectable by the left middle, right top and right bottom sensors at these spaces have been explored
         front = self.frontFree()
+
         # If right of robot is free
         if (self.checkFree([1, 2, 3, 0], self.robot.center)):
             # Move robot to the right

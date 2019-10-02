@@ -10,7 +10,7 @@ import threading
 from tornado.options import define, options
 from Algo.Exploration import Exploration
 from Algo.FastestPath import FastestPath
-from Algo.Constants import START, GOAL, NORTH, FORWARD, FORWARDFAST
+from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, EAST, FORWARD, FORWARDFAST, RIGHT, LEFT, MAX_COLS, MAX_ROWS
 
 
 # Define options.port using define method from tornado.options
@@ -193,7 +193,7 @@ def exploration(exp, limit, coverage):
     elapsedTime = 0
     update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head, START, GOAL, 0)
     logger('Exploration Started !')
-    current = exp.moveStep() # Current will be for e.g. (['w', 'w', 'w'], True)
+    current = exp.moveStep() # Current will be for example (['w', 'w', 'w'], True)
     currentMap = exp.currentMap
     area = exp.exploredArea
     visited = dict()
@@ -217,7 +217,7 @@ def exploration(exp, limit, coverage):
             # If you have visited the coordinates before, increase the number of times which you have visited it
             visited[currentPos] += 1
             # If you have visited the coordinate more than three times
-            if (visited[currentPos] > 3):
+            if (visited[currentPos] > 1):
                 # Get closest neighbour that has been explored
                 neighbour = exp.getExploredNeighbour()
                 # If such a neighbour exists
@@ -230,6 +230,35 @@ def exploration(exp, limit, coverage):
                     exp.robot.center = neighbour
                     exp.robot.head = fsp.robot.head
                     exp.robot.direction = fsp.robot.direction
+                    if (exp.robot.direction == NORTH):
+                        if(0<=exp.robot.center[1]+2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 ):
+                            exp.robot.moveBot(RIGHT)
+                            exp.robot.getSensors()
+                        elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
+                            exp.robot.moveBot(LEFT)
+                            exp.robot.getSensors()
+                    elif (exp.robot.direction == SOUTH):
+                        if(0<= exp.robot.center[1] +2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0):
+                            exp.robot.moveBot(LEFT)
+                            exp.robot.getSensors()
+                        elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
+                            exp.robot.moveBot(RIGHT)
+                            exp.robot.getSensors()
+                    elif (exp.robot.direction == EAST):
+                        if(0<= exp.robot.center[0]+2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0):
+                            exp.robot.moveBot(RIGHT)
+                            exp.robot.getSensors()
+                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0):
+                            exp.robot.moveBot(LEFT)
+                            exp.robot.getSensors()
+                    else:
+                        if(0<= exp.robot.center[0]+2 <= MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0):
+                            exp.robot.moveBot(LEFT)
+                            exp.robot.getSensors()
+                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0):
+                            exp.robot.moveBot(RIGHT)
+                            exp.robot.getSensors()
+                        
                 # When there are no such neighbour and robot is stuck, break out of while loop and stop exploration
                 else:
                     break

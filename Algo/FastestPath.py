@@ -334,22 +334,34 @@ class FastestPath:
 
 
     # Function to set current direction of robot based on previous and current position
-    def __setDirection(self, prev_pos, current_pos):
+    def __setDirection(self, prev_pos, current_pos, backwards = False):
         # If row index increases, the robot has moved south
         if prev_pos[0] < current_pos[0]:
-            self.direction = SOUTH
+            if(backwards == False):
+                self.direction = SOUTH
+            else:
+                self.direction = NORTH
         # If the column index increases, the robot has moved east
         elif prev_pos[1] < current_pos[1]:
-            self.direction = EAST
+            if(backwards == False):
+                self.direction = EAST
+            else:
+                self.direction = WEST
         # If the column index has decreased, the robot has moved west
         elif prev_pos[1] > current_pos[1]:
-            self.direction = WEST
+            if (backwards == False):
+                self.direction = WEST
+            else:
+                self.direction = EAST
         # If row index decreases, the robot has moved north
         else:
-            self.direction = NORTH
+            if(backwards == False):
+                self.direction = NORTH
+            else:
+                self.direction = SOUTH
 
 
-    def __astar(self, start, goal):
+    def __astar(self, start, goal, backwards = False):
         """Implementation of the a* algorithm for finding the shortest path in a 2d grid maze
 
         Args:
@@ -378,7 +390,10 @@ class FastestPath:
             current = min(openSet, key=lambda o: o.G + o.H)
             # If the node has a previous node (not start), set the new direction of robot
             if prev:
-                self.__setDirection(prev.coord, current.coord)
+                if(backwards == False):
+                    self.__setDirection(prev.coord, current.coord)
+                else:
+                    self.__setDirection(prev.coord, current.coord, backwards=True)
             # if goal is reached trace back the path
             if (current == goal):
                 path = []
@@ -433,7 +448,7 @@ class FastestPath:
             for col in xrange(MAX_COLS):
                 self.graph[row].append(Node(self.exploredMap[row][col], (row, col), h_n[row][col]))
 
-    def getFastestPath(self):
+    def getFastestPath(self, backwards = False):
         """To call the fastest path algorithm and handle the case if there is a way-point or not
         """
         path = []
@@ -443,7 +458,10 @@ class FastestPath:
             h_n = self.__getHeuristicCosts(self.waypoint)
             self.__initGraph(h_n)
             # Set waypoint as the goal first and find shortest path from start to goal
-            fsp = self.__astar(start, self.waypoint)
+            if(backwards == False):
+                fsp = self.__astar(start, self.waypoint)
+            else:
+                fsp = self.__astar(start, self.waypoint, backwards=True)
             # Set start to be way point
             start = copy.copy(self.waypoint)
             # Leaves out the last element as it will be the starting node for the next fastest path
@@ -452,7 +470,10 @@ class FastestPath:
         h_n = self.__getHeuristicCosts(self.goal)
         self.__initGraph(h_n)
         # start will be waypoint at this point if there is a waypoint
-        fsp = self.__astar(start, self.goal)
+        if(backwards == False):
+            fsp = self.__astar(start, self.goal)
+        else:
+            fsp = self.__astar(start, self.goal, backwards=True)
         path.extend(fsp)
         self.path = path
         self.markMap()

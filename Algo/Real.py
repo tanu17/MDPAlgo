@@ -1,6 +1,6 @@
 import numpy as np
 
-from Constants import MAX_ROWS, MAX_COLS, NORTH, SOUTH, EAST, WEST, RIGHT, LEFT, BOTTOM_LEFT_CORNER, BOTTOM_RIGHT_CORNER, TOP_RIGHT_CORNER, TOP_LEFT_CORNER, ALIGNRIGHT, ALIGNFRONT
+from Constants import MAX_ROWS, MAX_COLS, NORTH, SOUTH, EAST, WEST, RIGHT, LEFT, BOTTOM_LEFT_CORNER, BOTTOM_RIGHT_CORNER, TOP_RIGHT_CORNER, TOP_LEFT_CORNER, ALIGNRIGHT, ALIGNFRONT, BACKWARDS, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST
 
 
 class Robot:
@@ -135,7 +135,7 @@ class Robot:
         # We assume that the front left, front center and right top sensors are less accurate
         # We assume that the right bottom and left middle sensors are more accurate
         distanceShort = 3
-        distanceLong = 5
+        distanceLong = 4
         r, c = self.center
 
         # Front Left
@@ -208,18 +208,18 @@ class Robot:
             self.getValue(zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1],
                           sensor_vals[4], distanceLong, False)
 
-        # Left Middle
+        # Left Top
         if self.direction == NORTH:
-            self.getValue(zip([r]*distanceLong, range(c-distanceLong-1, c-1))[::-1],
+            self.getValue(zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1],
                           sensor_vals[5], distanceLong, False)
         elif self.direction == EAST:
-            self.getValue(zip(range(r - distanceShort - 1, r - 1), [c] * distanceShort)[::-1],
+            self.getValue(zip(range(r-distanceLong-1, r-1), [c+1]*distanceLong)[::-1],
                           sensor_vals[5], distanceLong, False)
         elif self.direction == WEST:
-            self.getValue(zip(range(r+2, r+distanceLong+2), [c]*distanceLong),
+            self.getValue(zip(range(r+2, r+distanceLong+2), [c-1]*distanceLong),
                           sensor_vals[5], distanceLong, False)
         else:
-            self.getValue(zip([r]*distanceLong, range(c+2, c+distanceLong+2)),
+            self.getValue(zip([r+1]*distanceLong, range(c+2, c+distanceLong+2)),
                           sensor_vals[5], distanceLong, False)
 
     # Checks to see if the robot is at a corner
@@ -375,8 +375,11 @@ class Robot:
                 self.direction = EAST
             elif movement == LEFT:
                 self.direction = WEST
-            else:
+            elif movement == FORWARD or movement == FORWARDFAST:
                 self.center = self.center + [-1, 0]
+                self.markArea(self.center, 1)
+            elif movement == BACKWARDS or movement == BACKWARDSFAST:
+                self.center = self.center + [1, 0]
                 self.markArea(self.center, 1)
             self.setHead()
         elif self.direction == EAST:
@@ -384,8 +387,11 @@ class Robot:
                 self.direction = SOUTH
             elif movement == LEFT:
                 self.direction = NORTH
-            else:
+            elif movement == FORWARD or movement == FORWARDFAST:
                 self.center = self.center + [0, 1]
+                self.markArea(self.center, 1)
+            elif movement == BACKWARDS or movement == BACKWARDSFAST:
+                self.center = self.center + [0, -1]
                 self.markArea(self.center, 1)
             self.setHead()
         elif self.direction == SOUTH:
@@ -393,8 +399,11 @@ class Robot:
                 self.direction = WEST
             elif movement == LEFT:
                 self.direction = EAST
-            else:
+            elif movement == FORWARD or movement == FORWARDFAST:
                 self.center = self.center + [1, 0]
+                self.markArea(self.center, 1)
+            elif movement == BACKWARDS or movement == BACKWARDSFAST:
+                self.center = self.center + [-1, 0]
                 self.markArea(self.center, 1)
             self.setHead()
         else:
@@ -402,8 +411,11 @@ class Robot:
                 self.direction = NORTH
             elif movement == LEFT:
                 self.direction = SOUTH
-            else:
+            elif movement == FORWARD or movement == FORWARDFAST:
                 self.center = self.center + [0, -1]
+                self.markArea(self.center, 1)
+            elif movement == BACKWARDS or movement == BACKWARDSFAST:
+                self.center = self.center + [0, 1]
                 self.markArea(self.center, 1)
             self.setHead()
 

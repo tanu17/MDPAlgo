@@ -15,7 +15,7 @@ from Algo.FastestPath import FastestPath
 from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT
 
 # Global Variables
-define("port", default=8888, help="run on the given port", type=int)
+define("port", default=8888, help="run on the given port 8888", type=int)
 clients = dict()
 currentMap = np.zeros([20, 15])
 ######################################
@@ -285,7 +285,10 @@ def markMap(curMap, waypoint):
 
 
 def fastestPath(fsp, goal, area, waypoint, backwards=False):
-    fsp.getFastestPath()
+    if(backwards == False):
+        fsp.getFastestPath()
+    else:
+        fsp.getFastestPath(backwards=True)
     logger(json.dumps(fsp.path))
     while (fsp.robot.center.tolist() != goal.tolist()):
         if(backwards == False):
@@ -393,6 +396,8 @@ class RPi(threading.Thread):
             log_file.flush()
             if (data):
                 print ('Received %s from RPi' % (data))
+                data = str(data)
+                data = data.rstrip()
                 split_data = data.split("|") # To be updated
                 global exp, t_s, area, steps, numCycle, currentMap, exp, fsp
                 # Initialise exploration
@@ -403,16 +408,19 @@ class RPi(threading.Thread):
                     visited[tuple(current_pos)] = 1
                     update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head,
                            START, GOAL, 0)
+                    arduino_msg = arduino_message_formatter(["L"], getSensor=False)
+                    self.client_socket.send(arduino_msg)
+                    print ('Sent %s to RPi' % (arduino_msg))
                 # Set waypoint
                 elif (split_data[0] == 'WAYPOINT'):
                     global waypoint
                     waypoint = map(int, split_data[1:])
                     waypoint[0] = 19 - waypoint[0]
-
                 elif (split_data[0] == 'COMPUTE'):
+                    print(split_data)
                     print 'Time 0: %s s' % (time.time() - time_t)
                     # Get sensor values
-                    sensors = map(float, split_data[1:])
+                    sensors = map(int, split_data[1:])
                     current_pos = exp.robot.center
                     current = exp.moveStep(sensors) # Get next movements and whether or not 100% covergae is reached
                     currentMap = exp.currentMap
@@ -430,7 +438,7 @@ class RPi(threading.Thread):
                             # Increase the visited count of the current position by one
                             visited[current_pos] += 1
                             # If the current position has been visited for more than three times
-                            if (visited[current_pos] > 3):
+                            if (visited[current_pos] > 2):
                                 # Get a valid unexplored neighbour of explored spaces
                                 neighbour = exp.getExploredNeighbour()
                                 # If there is such a neighbour
@@ -534,7 +542,7 @@ class RPi(threading.Thread):
                 elif (split_data[0] == 'FASTEST'):
                     fsp = FastestPath(currentMap, START, GOAL, direction, waypoint, sim=False)
                     current_pos = fsp.robot.center
-                    fastestPath(fsp, GOAL, 300, waypoint, backwards=True)
+                    fastestPath(fsp, GOAL, 300, waypoint, backwards=False)
                     # move = fsp.movement
                     move = fsp.movement
                     path = fsp.path

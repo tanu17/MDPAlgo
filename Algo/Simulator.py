@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-from Constants import MAX_ROWS, MAX_COLS, NORTH, SOUTH, EAST, WEST, RIGHT, LEFT
+from Constants import MAX_ROWS, MAX_COLS, NORTH, SOUTH, EAST, WEST, RIGHT, LEFT, MAX_ROWS, MAX_COLS
 
 class Robot:
 
@@ -173,7 +173,7 @@ class Robot:
             Numpy array of Numpy arrays: Sensor values from all sensors
         """
         distanceShort = 3
-        distanceLong = 5
+        distanceLong = 4
         r, c = self.center
 
         # Front Left
@@ -234,13 +234,13 @@ class Robot:
 
         # Left Middle
         if self.direction == NORTH:
-            self.getValue(zip([r]*distanceLong, range(c-distanceLong-1, c-1))[::-1])
+            self.getValue(zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1])
         elif self.direction == EAST:
-            self.getValue(zip(range(r - distanceLong - 1, r - 1), [c] * distanceLong)[::-1])
+            self.getValue(zip(range(r-distanceLong-1, r-1), [c+1]*distanceLong)[::-1])
         elif self.direction == WEST:
-            self.getValue(zip(range(r+2, r+distanceLong+2), [c]*distanceLong))
+            self.getValue(zip(range(r+2, r+distanceLong+2), [c-1]*distanceLong))
         else:
-            self.getValue(zip([r]*distanceLong, range(c+2, c+distanceLong+2)))
+            self.getValue(zip([r+1]*distanceLong, range(c+2, c+distanceLong+2)))
 
     def moveBot(self, movement):
         """Simulates the bot movement based on current location, direction and received action

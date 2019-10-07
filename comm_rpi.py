@@ -12,12 +12,12 @@ from threading import Thread
 from tornado.options import define, options
 from Algo.Exploration import Exploration
 from Algo.FastestPath import FastestPath
-from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT
+from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT, MAX_ROWS, MAX_COLS
 
 # Global Variables
 define("port", default=8888, help="run on the given port 8888", type=int)
 clients = dict()
-currentMap = np.zeros([20, 15])
+currentMap = np.zeros([MAX_ROWS, MAX_COLS])
 ######################################
 #################Update this accordingly
 ######################################
@@ -131,7 +131,7 @@ class ResetHandler(web.RequestHandler):
         self.write("Reset...")
         global exp
         exp = Exploration(map_name, 5)
-        update(np.zeros([20, 15]), exp.exploredArea, exp.robot.center, exp.robot.head,
+        update(np.zeros([MAX_ROWS, MAX_COLS]), exp.exploredArea, exp.robot.center, exp.robot.head,
                START, GOAL, 0)
 
 
@@ -200,7 +200,7 @@ def exploration(exp, limit, coverage):
         currentPos = tuple(exp.robot.center)
         if (currentPos in visited):
             visited[currentPos] += 1
-            if (visited[currentPos] > 3):
+            if (area > 15 and visited[currentPos] > 1) or (visited[currentPos] > 2):
                 neighbour = exp.getExploredNeighbour()
                 if (neighbour):
                     neighbour = np.asarray(neighbour)
@@ -208,6 +208,36 @@ def exploration(exp, limit, coverage):
                                       exp.robot.direction, None)
                     fastestPath(fsp, neighbour, exp.exploredArea, None)
                     exp.robot.center = neighbour
+                    exp.robot.head = fsp.robot.head
+                    exp.robot.direction = fsp.robot.direction
+                    if (exp.robot.direction == NORTH):
+                        if(0<=exp.robot.center[1]+2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 ):
+                            exp.robot.moveBot(RIGHT)
+                            exp.robot.getSensors()
+                        elif(0<=exp.robot.center[1]-2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 1][exp.robot.center[1] -2] == 0)):
+                            exp.robot.moveBot(LEFT)
+                            exp.robot.getSensors()
+                    elif (exp.robot.direction == SOUTH):
+                        if(0<= exp.robot.center[1] +2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 1][exp.robot.center[1] + 2] == 0)):
+                            exp.robot.moveBot(LEFT)
+                            exp.robot.getSensors()
+                        elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
+                            exp.robot.moveBot(RIGHT)
+                            exp.robot.getSensors()
+                    elif (exp.robot.direction == EAST):
+                        if(0<= exp.robot.center[0]+2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0):
+                            exp.robot.moveBot(RIGHT)
+                            exp.robot.getSensors()
+                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 2][exp.robot.center[1] - 1] == 0)):
+                            exp.robot.moveBot(LEFT)
+                            exp.robot.getSensors()
+                    else:
+                        if(0<= exp.robot.center[0]+2 < MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 2][exp.robot.center[1] + 1] == 0)):
+                            exp.robot.moveBot(LEFT)
+                            exp.robot.getSensors()
+                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0)):
+                            exp.robot.moveBot(RIGHT)
+                            exp.robot.getSensors()
                 else:
                     break
         else:
@@ -215,7 +245,7 @@ def exploration(exp, limit, coverage):
         if (np.array_equal(exp.robot.center, START)):
             numCycle += 1
             # If robot has came back to start position more than once and it took more than 4 steps
-            if (numCycle > 1 and steps > 4):
+            if (numCycle > 2 and steps > 4):
                 # Try to get any unexplored neighbours
                 neighbour = exp.getExploredNeighbour()
                 # If there are unexplored neighbours, go and explore it
@@ -438,7 +468,7 @@ class RPi(threading.Thread):
                             # Increase the visited count of the current position by one
                             visited[current_pos] += 1
                             # If the current position has been visited for more than three times
-                            if (visited[current_pos] > 2):
+                            if (visited[current_pos] >= 1):
                                 # Get a valid unexplored neighbour of explored spaces
                                 neighbour = exp.getExploredNeighbour()
                                 # If there is such a neighbour
@@ -484,21 +514,21 @@ class RPi(threading.Thread):
                         ######################################
                         # arduino_msg and android_msg is the message to be sent to Rpi
                         arduino_msg = arduino_message_formatter(move)
-                        android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]])), exp.robot.direction])
+                        android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
                         print 'Time 2: %s s' % (time.time() - time_t)
                     # If 100% coverage
                     else:
                         # Send movement to Rpi
                         move = current[0]
                         arduino_msg = arduino_message_formatter(move)
-                        android_msg = android_message_formatter('DONE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]])), exp.robot.direction])
-                        self.client_socket.send(arduino_msg)
-                        print ('Sent %s to RPi' % (arduino_msg))
+                        android_msg = android_message_formatter('DONE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
                         self.client_socket.send(android_msg)
                         print ('Sent %s to RPi' % (android_msg))
+                        self.client_socket.send(arduino_msg)
+                        print ('Sent %s to RPi' % (arduino_msg))
                         log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))
-                        log_file.write('Sent %s to RPi\n\n' % (arduino_msg))
                         log_file.write('Sent %s to RPi\n\n' % (android_msg))
+                        log_file.write('Sent %s to RPi\n\n' % (arduino_msg))
                         log_file.flush()
                         time.sleep(2)
                         # Inform front end that exploration is complete
@@ -528,19 +558,23 @@ class RPi(threading.Thread):
                         ###############Update this accordingly
                         ######################################
                         arduino_msg = arduino_message_formatter(move + calibrate_move, getSensor=False)
-                        android_msg = android_message_formatter('ALIGN', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(np.asarray([19 - exp.robot.center[0], exp.robot.center[1]])), exp.robot.direction])
+                        android_msg = android_message_formatter('ALIGN', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
                         time.sleep(1)
-                    self.client_socket.send(arduino_msg)
-                    print ('Sent %s to RPi' % (arduino_msg))
                     self.client_socket.send(android_msg)
                     print ('Sent %s to RPi' % (android_msg))
+                    self.client_socket.send(arduino_msg)
+                    print ('Sent %s to RPi' % (arduino_msg))
                     log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))
-                    log_file.write('Sent %s to RPi\n\n' % (arduino_msg))
                     log_file.write('Sent %s to RPi\n\n' % (android_msg))
+                    log_file.write('Sent %s to RPi\n\n' % (arduino_msg))
                     log_file.flush()
                 # Start fastest path
                 elif (split_data[0] == 'FASTEST'):
                     fsp = FastestPath(currentMap, START, GOAL, direction, waypoint, sim=False)
+                    #file1= np.ones([20, 15])
+                    #sim=True
+                    #fsp = FastestPath(file1, START, GOAL, direction, waypoint, sim)
+
                     current_pos = fsp.robot.center
                     fastestPath(fsp, GOAL, 300, waypoint, backwards=False)
                     # move = fsp.movement
@@ -548,13 +582,13 @@ class RPi(threading.Thread):
                     path = fsp.path
                     arduino_msg = arduino_message_formatter(move, getSensor=False)
                     android_msg = android_message_formatter('FASTEST', path)
-                    self.client_socket.send(arduino_msg)
-                    print ('Sent %s to RPi' % (arduino_msg))
                     self.client_socket.send(android_msg)
                     print ('Sent %s to RPi' % (android_msg))
+                    self.client_socket.send(arduino_msg) 
+                    print ('Sent %s to RPi' % (arduino_msg))
                     log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))
-                    log_file.write('Sent %s to RPi\n\n' % (arduino_msg))
                     log_file.write('Sent %s to RPi\n\n' % (android_msg))
+                    log_file.write('Sent %s to RPi\n\n' % (arduino_msg))
                     log_file.flush()
                 # To move the robot manually
                 elif (split_data[0] == 'MANUAL'):

@@ -17,7 +17,7 @@ BACKWARDS = "S" # Move backwards by 10cm
 BACKWARDSFAST = "B" # Move backwards quickly by 10cm
 SENSOR = "L" # Get sensor readings from Arduino
 ALIGNRIGHT = "P" # Tell robot to align itself using obstacles on the right
-ALIGNFRONT = "O" # Tell robot to align itself using obstacles on the front
+ALIGNFRONT = "H" # Tell robot to align itself using obstacles on the front
 
 
 # Arena is 200cm by 150cm

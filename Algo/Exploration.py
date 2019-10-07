@@ -112,75 +112,80 @@ class Exploration:
         # and all spaces detectable by the left middle, right top and right bottom sensors at these spaces have been explored
         front = self.frontFree()
 
-        # If right of robot is free
-        if (self.checkFree([1, 2, 3, 0], self.robot.center)):
-            # Move robot to the right
-            self.robot.moveBot(RIGHT)
-            move.append(RIGHT)
-            front = self.frontFree()
-            # Move robot forward according to frontFree function
-            for i in range(front):
-                self.robot.moveBot(FORWARD)
-            move.extend([FORWARD]*front)
-        # If front > 0
-        elif (front):
-            # Move robot forward
-            for i in range(front):
-                self.robot.moveBot(FORWARD)
-            move.extend([FORWARD]*front)
-        # Else if the robot's left is free
-        elif (self.checkFree([3, 0, 1, 2], self.robot.center)):
-            # Move robot to the left
+        if(not (self.sim) and self.robot.is_corner() == True):
+            move = [ALIGNFRONT, ALIGNRIGHT, LEFT]
             self.robot.moveBot(LEFT)
-            move.append(LEFT)
-            front = self.frontFree()
-            for i in range(front):
-                self.robot.moveBot(FORWARD)
-            move.extend([FORWARD]*front)
-        # Else, turn the robot around
         else:
-            self.robot.moveBot(RIGHT)
-            self.robot.moveBot(RIGHT)
-            move.extend(('O'))
-        # single step
-        # if (self.checkFree([1, 2, 3, 0], self.robot.center)):
-        #     self.robot.moveBot(RIGHT)
-        #     move.append(RIGHT)
-        #     if (self.checkFree([0, 1, 2, 3], self.robot.center)):
-        #         self.robot.moveBot(FORWARD)
-        #         move.append(FORWARD)
-        # elif (self.checkFree([0, 1, 2, 3], self.robot.center)):
-        #     self.robot.moveBot(FORWARD)
-        #     move.append(FORWARD)
-        # elif (self.checkFree([3, 0, 1, 2], self.robot.center)):
-        #     self.robot.moveBot(LEFT)
-        #     move.append(LEFT)
-        #     if (self.checkFree([0, 1, 2, 3], self.robot.center)):
-        #         self.robot.moveBot(FORWARD)
-        #         move.append(FORWARD)
-        # else:
-        #     self.robot.moveBot(RIGHT)
-        #     self.robot.moveBot(RIGHT)
-        #     move.extend(('O'))
-        # If not a simulation
-        if not (self.sim):
-            # Check if there is a wall in front for robot to calibrate
-            calibrate_front = self.robot.can_calibrate_front()
-            # Check if there is a wall to the right for the robot to calibrate
-            calibrate_right = self.robot.can_calibrate_right()
-            # If the robot is at a corner
-            if self.robot.is_corner():
-                move.append(ALIGNFRONT)
-                move.append(ALIGNRIGHT)
-            # If robot is not at a corner but there is a wall to the right for calibration
-            elif (calibrate_right[0]):
-                # Append command from can_calibrate_right function
-                move.append(calibrate_right[1])
-            # If robot is not at a corner and there is no wall to the right of the robot
-            # If there is a wall to the front for calibration
-            elif (calibrate_front[0]):
-                # Append command from can_calibrate_front function
-                move.append(calibrate_front[1])
+            # If right of robot is free
+            if (self.checkFree([1, 2, 3, 0], self.robot.center)):
+                # Move robot to the right
+                self.robot.moveBot(RIGHT)
+                move.append(RIGHT)
+                front = self.frontFree()
+                # Move robot forward according to frontFree function
+                for i in range(front):
+                    self.robot.moveBot(FORWARD)
+                move.extend([FORWARD]*front)
+            # If front > 0
+            elif (front):
+                # Move robot forward
+                for i in range(front):
+                    self.robot.moveBot(FORWARD)
+                move.extend([FORWARD]*front)
+            # Else if the robot's left is free
+            elif (self.checkFree([3, 0, 1, 2], self.robot.center)):
+                # Move robot to the left
+                self.robot.moveBot(LEFT)
+                move.append(LEFT)
+                front = self.frontFree()
+                for i in range(front):
+                    self.robot.moveBot(FORWARD)
+                move.extend([FORWARD]*front)
+            # Else, turn the robot around
+            else:
+                self.robot.moveBot(RIGHT)
+                self.robot.moveBot(RIGHT)
+                move.append(RIGHT)
+                move.append(RIGHT)
+            # single step
+            # if (self.checkFree([1, 2, 3, 0], self.robot.center)):
+            #     self.robot.moveBot(RIGHT)
+            #     move.append(RIGHT)
+            #     if (self.checkFree([0, 1, 2, 3], self.robot.center)):
+            #         self.robot.moveBot(FORWARD)
+            #         move.append(FORWARD)
+            # elif (self.checkFree([0, 1, 2, 3], self.robot.center)):
+            #     self.robot.moveBot(FORWARD)
+            #     move.append(FORWARD)
+            # elif (self.checkFree([3, 0, 1, 2], self.robot.center)):
+            #     self.robot.moveBot(LEFT)
+            #     move.append(LEFT)
+            #     if (self.checkFree([0, 1, 2, 3], self.robot.center)):
+            #         self.robot.moveBot(FORWARD)
+            #         move.append(FORWARD)
+            # else:
+            #     self.robot.moveBot(RIGHT)
+            #     self.robot.moveBot(RIGHT)
+            #     move.extend(('O'))
+            # If not a simulation
+            if not (self.sim):
+                # Check if there is a wall in front for robot to calibrate
+                calibrate_front = self.robot.can_calibrate_front()
+                # Check if there is a wall to the right for the robot to calibrate
+                calibrate_right = self.robot.can_calibrate_right()
+                # If the robot is at a corner
+                if self.robot.is_corner():
+                    move.append(ALIGNFRONT)
+                    move.append(ALIGNRIGHT)
+                # If robot is not at a corner but there is a wall to the right for calibration
+                elif (calibrate_right[0]):
+                    # Append command from can_calibrate_right function
+                    move.append(calibrate_right[1])
+                # If robot is not at a corner and there is no wall to the right of the robot
+                # If there is a wall to the front for calibration
+                elif (calibrate_front[0]):
+                    # Append command from can_calibrate_front function
+                    move.append(calibrate_front[1])
         # Return list of moves
         return move
 
@@ -440,6 +445,8 @@ class Exploration:
 
         # returns all location where current map is unexplored, with x coordinate in one array and y coordinate in different array
         locs = np.where(self.currentMap == 0)
+        if(len(locs[0]) == 0):
+            return None
         # forms a virtual arena of unexplored area as rectangle
         self.virtualWall = [np.min(locs[0]), np.min(locs[1]), np.max(locs[0])+1, np.max(locs[1])+1]
         if ((self.virtualWall[2]-self.virtualWall[0] < 3) and self.virtualWall[2] < MAX_ROWS-3):
@@ -458,11 +465,12 @@ class Exploration:
             position = np.argmin(cost) # position gives index of minimum cost
             coord = locs.pop(position)
             cost.pop(position)
-            neighbours = np.asarray([[-2, 0], [2, 0], [0, -2], [0, 2]]) + coord
+            neighbours = np.asarray([[-2, 0], [-2, -1], [-2, 1], [2, 0], [2, -1], [2, 1], [0, -2], [1, -2], [-1, -2], [0, 2], [1, 2], [-1, 2]]) + coord
             neighbours = self.__validInds(neighbours) # check if the coordinates in the list are valid or not
             for neighbour in neighbours:
                 # added a new item to the exploredNeighbours dictionary
                 if (neighbour not in self.exploredNeighbours):
                     self.exploredNeighbours[neighbour] = True
                     return neighbour
+                return neighbour
         return None

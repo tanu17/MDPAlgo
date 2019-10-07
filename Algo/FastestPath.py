@@ -85,8 +85,8 @@ class FastestPath:
             Numpy array: 2D grid with each cell storing the distance to the goal cell
         """
         # this will create a grid of coordinates
-        cols, rows = np.meshgrid(range(0, 15), range(0, 20))
-        cost = np.zeros([20, 15])
+        cols, rows = np.meshgrid(range(0, 15), range(0, MAX_ROWS))
+        cost = np.zeros([MAX_ROWS, 15])
         cost = np.sqrt(np.square(rows - goal[0]) + np.square(cols - goal[1]))
         cost /= np.max(cost)
         return cost
@@ -492,9 +492,9 @@ class FastestPath:
         """
         movement = []
         if(backwards == False):
-            move_command = BACKWARDS
-        else:
             move_command = FORWARD
+        else:
+            move_command = BACKWARDS
         # self.index is first initialised to 1 when the FastestPath class is first initialised
         # Moving one step will increase self.index by one, thereby making self.path[self.index]) go to the next space allong the path
         # If the next space in the path is not equal to robot's centre and hence, robot should move to the next space in the path

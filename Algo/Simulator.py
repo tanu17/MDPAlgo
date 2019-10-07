@@ -295,7 +295,7 @@ class Robot:
         descriptor = np.zeros([20, 15]).astype(int)
         # If the coordinate is 2 (has obstacle) or 1 (explored and free),
         # then set value at coordinate in descriptor to be 1
-        descriptor[self.exploredMap[::-1, :] != 0] = 1
+        descriptor[self.exploredMap[:, :] != 0] = 1
         # Need to pad map descriptor at the start according to the requirements
         bits = '11'
         for i in range(len(descriptor)):
@@ -335,7 +335,7 @@ class Robot:
             for bit in row:
                 if bit == 2:
                     bits += '1'
-                elif bit != 2:
+                elif bit == 1:
                     bits += '0'
         bits += '0'*(4 - len(bits) % 4)
         hex_str = ['%X' % int(bits[i:i+4], 2) for i in range(0, len(bits)-3, 4)]

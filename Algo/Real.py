@@ -230,46 +230,42 @@ class Robot:
             fw = False # fw default is false
             # fw is true when robot at boundary of the arena's top or
             # there is obstacles directly on the robot's front centre, front left and front right
-            fw = (r-2 == -1) or (r-2 != -1 and self.exploredMap[r-2][c-1] == 2 and
+            fw = (r-2 < 0) or (r-2 >= 0 and self.exploredMap[r-2][c-1] == 2 and
                                  self.exploredMap[r-2][c] == 2
                                  and self.exploredMap[r-2][c+1] == 2)
             # rw is true when robot at boundary of the arena's right or
             # when there are obstacles directly on the robot's top right, middle right and bottom right
-            rw = (c+2 == MAX_COLS) or (c+2 != MAX_COLS and self.exploredMap[r-1][c+2] == 2 and
-                                       self.exploredMap[r][c+2] == 2
+            rw = (c+2 == MAX_COLS) or (c+2 < MAX_COLS and self.exploredMap[r-1][c+2] == 2 
                                        and self.exploredMap[r+1][c+2] == 2)
             if fw and rw:
                 return True
             else:
                 return False
         elif self.direction == EAST:
-            fw = (c+2 == MAX_COLS) or (c+2 != MAX_COLS and self.exploredMap[r-1][c+2] == 2 and
+            fw = (c+2 == MAX_COLS) or (c+2 < MAX_COLS and self.exploredMap[r-1][c+2] == 2 and
                                        self.exploredMap[r][c+2] == 2
                                        and self.exploredMap[r+1][c+2] == 2)
-            rw = (r+2 == MAX_ROWS) or (r+2 != MAX_ROWS and self.exploredMap[r+2][c-1] == 2 and
-                                       self.exploredMap[r+2][c] == 2
+            rw = (r+2 == MAX_ROWS) or (r+2 < MAX_ROWS and self.exploredMap[r+2][c-1] == 2 
                                        and self.exploredMap[r+2][c+1] == 2)
             if fw and rw:
                 return True
             else:
                 return False
         elif self.direction == SOUTH:
-            fw = (r+2 == MAX_ROWS) or (r+2 != MAX_ROWS and self.exploredMap[r+2][c-1] == 2 and
+            fw = (r+2 == MAX_ROWS) or (r+2 < MAX_ROWS and self.exploredMap[r+2][c-1] == 2 and
                                        self.exploredMap[r+2][c] == 2
                                        and self.exploredMap[r+2][c+1] == 2)
-            rw = (c-2 == -1) or (c-2 != -1 and self.exploredMap[r-1][c-2] == 2 and
-                                 self.exploredMap[r][c-2] == 2
+            rw = (c-2 == -1) or (c-2 >= 0 and self.exploredMap[r-1][c-2] == 2 
                                  and self.exploredMap[r+1][c-2] == 2)
             if fw and rw:
                 return True
             else:
                 return False
         else:
-            fw = (c-2 == -1) or (c-2 != -1 and self.exploredMap[r-1][c-2] == 2 and
+            fw = (c-2 == -1) or (c-2 >= 0 and self.exploredMap[r-1][c-2] == 2 and
                                  self.exploredMap[r][c-2] == 2
                                  and self.exploredMap[r+1][c-2] == 2)
-            rw = (r-2 == -1) or (r-2 != -1 and self.exploredMap[r-2][c-1] == 2 and
-                                 self.exploredMap[r-2][c] == 2
+            rw = (r-2 == -1) or (r-2 >= 0 and self.exploredMap[r-2][c-1] == 2 
                                  and self.exploredMap[r-2][c+1] == 2)
             if fw and rw:
                 return True
@@ -281,43 +277,25 @@ class Robot:
         r, c = self.center
         flag = [False, None]
         if self.direction == NORTH:
-            for i in range(2, 3):
-                if ((r-i) < 0): # At the upper boundary of the arena
-                    flag = [True, ALIGNFRONT]
-                    break
-                # Not at the upper boundary but there is an obstacle directly at the robot's
-                # front centre, front left and front right
-                elif ((r - i) >= 0 and (self.exploredMap[r-i][c-1] == 2 and
-                      self.exploredMap[r-i][c] == 2 and self.exploredMap[r-i][c+1] == 2)):
-                    flag = [True, ALIGNFRONT]
-                    break
+            if((r - 2) < 0):
+                flag = [True, ALIGNFRONT]
+            elif ((r - 2) >= 0 and (self.exploredMap[r-2][c-1] == 2 and self.exploredMap[r-2][c] == 2 and self.exploredMap[r-2][c+1] == 2)):
+                flag = [True, ALIGNFRONT]
         elif self.direction == WEST:
-            for i in range(2, 3):
-                if ((c-i) < 0):
-                    flag = [True, ALIGNFRONT]
-                    break
-                elif ((c-i) >= 0 and (self.exploredMap[r-1][c-i] == 2 and
-                      self.exploredMap[r][c-i] == 2 and self.exploredMap[r+1][c-i] == 2)):
-                    flag = [True, ALIGNFRONT]
-                    break
+            if((c - 2) < 0):
+                flag = [True, ALIGNFRONT]
+            elif ((c-2) >= 0 and (self.exploredMap[r-1][c-2] == 2 and self.exploredMap[r][c-2] == 2 and self.exploredMap[r+1][c-2] == 2)):
+                flag = [True, ALIGNFRONT]
         elif self.direction == EAST:
-            for i in range(2, 3):
-                if ((c + i) == MAX_COLS):
-                    flag = [True, ALIGNFRONT]
-                    break
-                elif ((c + i) < MAX_COLS and (self.exploredMap[r-1][c+i] == 2 and
-                      self.exploredMap[r][c+i] == 2 and self.exploredMap[r+1][c+i] == 2)):
-                    flag = [True, ALIGNFRONT]
-                    break
+            if((c + 2) == MAX_COLS):
+                flag = [True, ALIGNFRONT]
+            elif ((c + 2) < MAX_COLS and (self.exploredMap[r-1][c+2] == 2 and self.exploredMap[r][c+2] == 2 and self.exploredMap[r+1][c+2] == 2)):
+                flag = [True, ALIGNFRONT]
         else:
-            for i in range(2, 3):
-                if ((r+i) == MAX_ROWS):
-                    flag = [True, ALIGNFRONT]
-                    break
-                elif ((r+i) < MAX_ROWS and (self.exploredMap[r+i][c-1] == 2 and
-                      self.exploredMap[r+i][c] == 2 and self.exploredMap[r+i][c+1] == 2)):
-                    flag = [True, ALIGNFRONT]
-                    break
+            if((r+2) == MAX_ROWS):
+                flag = [True, ALIGNFRONT]
+            elif ((r+2) < MAX_ROWS and (self.exploredMap[r+2][c-1] == 2 and self.exploredMap[r+2][c] == 2 and self.exploredMap[r+2][c+1] == 2)):
+                flag = [True, ALIGNFRONT]
         return flag
 
     # Checks to see if there is a wall to the right of the robot for it to calibrate
@@ -325,41 +303,25 @@ class Robot:
         r, c = self.center
         flag = [False, None]
         if self.direction == NORTH:
-            for i in range(2, 3):
-                if ((c + i) == MAX_COLS):
-                    flag = [True, ALIGNRIGHT]
-                    break
-                elif ((c + i) < MAX_COLS and (self.exploredMap[r-1, c+i] == 2 and
-                      self.exploredMap[r+1, c+i] == 2)):
-                    flag = [True, ALIGNRIGHT]
-                    break
+            if((c + 2) == MAX_COLS):
+                flag = [True, ALIGNRIGHT]
+            elif ((c + 2) < MAX_COLS and (self.exploredMap[r-1][c+2] == 2 and self.exploredMap[r+1][c+2] == 2)):
+                flag = [True, ALIGNRIGHT]
         elif self.direction == WEST:
-            for i in range(2, 3):
-                if ((r - i) < 0):
-                    flag = [True, ALIGNRIGHT]
-                    break
-                elif ((r - i) >= 0 and (self.exploredMap[r-i, c-1] == 2 and
-                      self.exploredMap[r-i, c+1] == 2)):
-                    flag = [True, ALIGNRIGHT]
-                    break
+            if((r - 2) < 0):
+                flag = [True, ALIGNRIGHT]
+            elif ((r - 2) >= 0 and (self.exploredMap[r-2][c-1] == 2 and self.exploredMap[r-2][c+1] == 2)):
+                flag = [True, ALIGNRIGHT]
         elif self.direction == EAST:
-            for i in range(2, 3):
-                if ((r + i) == MAX_ROWS):
-                    flag = [True, ALIGNRIGHT]
-                    break
-                elif ((r + i) < MAX_ROWS and (self.exploredMap[r+i, c-1] == 2 and
-                      self.exploredMap[r+i, c+1] == 2)):
-                    flag = [True, ALIGNRIGHT]
-                    break
+            if((r+2) == MAX_ROWS):
+                flag = [True, ALIGNRIGHT]
+            elif ((r+2) < MAX_ROWS and (self.exploredMap[r+2][c-1] == 2 and self.exploredMap[r+2][c+1] == 2)):
+                flag = [True, ALIGNRIGHT]
         else:
-            for i in range(2, 3):
-                if ((c-i) < 0):
-                    flag = [True, ALIGNRIGHT]
-                    break
-                elif ((c - i) >= 0 and (self.exploredMap[r-1, c-i] == 2 and
-                      self.exploredMap[r+1, c-i] == 2)):
-                    flag = [True, ALIGNRIGHT]
-                    break
+            if((c - 2) < 0):
+                flag = [True, ALIGNRIGHT]
+            elif ((c-2) >= 0 and (self.exploredMap[r-1][c-2] == 2 and self.exploredMap[r+1][c-2] == 2)):
+                flag = [True, ALIGNRIGHT]
         return flag
 
     def moveBot(self, movement):
@@ -432,11 +394,11 @@ class Robot:
 
     def descriptor_2(self):
         bits = ''
-        for row in self.exploredMap[:, :]:
+        for row in self.exploredMap[::-1, :]:
             for bit in row:
                 if bit == 2:
                     bits += '1'
-                elif bit != 2:
+                elif bit == 1:
                     bits += '0'
         bits += '0'*(4 - len(bits) % 4)
         hex_str = ['%X' % int(bits[i:i+4], 2) for i in range(0, len(bits)-3, 4)]

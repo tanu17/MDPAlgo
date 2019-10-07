@@ -213,11 +213,12 @@ def exploration(exp, limit, coverage):
         area = exp.exploredArea
         steps += 1
         currentPos = tuple(exp.robot.center)
+
         if (currentPos in visited):
             # If you have visited the coordinates before, increase the number of times which you have visited it
             visited[currentPos] += 1
             # If you have visited the coordinate more than three times
-            if (visited[currentPos] > 1):
+            if (area > 15 and visited[currentPos] > 1) or (visited[currentPos] > 2):
                 # Get closest neighbour that has been explored
                 neighbour = exp.getExploredNeighbour()
                 # If such a neighbour exists
@@ -234,11 +235,11 @@ def exploration(exp, limit, coverage):
                         if(0<=exp.robot.center[1]+2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 ):
                             exp.robot.moveBot(RIGHT)
                             exp.robot.getSensors()
-                        elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
+                        elif(0<=exp.robot.center[1]-2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 1][exp.robot.center[1] -2] == 0)):
                             exp.robot.moveBot(LEFT)
                             exp.robot.getSensors()
                     elif (exp.robot.direction == SOUTH):
-                        if(0<= exp.robot.center[1] +2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0):
+                        if(0<= exp.robot.center[1] +2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 1][exp.robot.center[1] + 2] == 0)):
                             exp.robot.moveBot(LEFT)
                             exp.robot.getSensors()
                         elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
@@ -248,14 +249,14 @@ def exploration(exp, limit, coverage):
                         if(0<= exp.robot.center[0]+2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0):
                             exp.robot.moveBot(RIGHT)
                             exp.robot.getSensors()
-                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0):
+                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 2][exp.robot.center[1] - 1] == 0)):
                             exp.robot.moveBot(LEFT)
                             exp.robot.getSensors()
                     else:
-                        if(0<= exp.robot.center[0]+2 <= MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0):
+                        if(0<= exp.robot.center[0]+2 < MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 2][exp.robot.center[1] + 1] == 0)):
                             exp.robot.moveBot(LEFT)
                             exp.robot.getSensors()
-                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0):
+                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0)):
                             exp.robot.moveBot(RIGHT)
                             exp.robot.getSensors()
                         

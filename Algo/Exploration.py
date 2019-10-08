@@ -439,6 +439,62 @@ class Exploration:
         print "Time over !"
         return
 
+    def getCloseExploredNeighbour(self):
+        locs = np.where(self.currentMap == 0)
+        if(len(locs[0]) == 0):
+            return None
+        self.virtualWall = [np.min(locs[0]), np.min(locs[1]), np.max(locs[0])+1, np.max(locs[1])+1]
+        if ((self.virtualWall[2]-self.virtualWall[0] < 3) and self.virtualWall[2] < MAX_ROWS-3):
+            self.virtualWall[2] += 3
+        locs = list(np.asarray(zip(locs[0], locs[1])))
+
+        if(0 <= self.robot.center[0] < 10):
+            if(0 <= self.robot.center[1] < 8):
+                locs = [loc for loc in locs if 0 <= loc[0] < 10 and 0 <= loc[1] < 8]
+            else:
+                locs = [loc for loc in locs if 0 <= loc[0] < 10 and 8 <= loc[1] < 15]
+        else:
+            if(10 <= self.robot.center[0] < 20):
+                locs = [loc for loc in locs if 10 <= loc[0] < 20 and 0 <= loc[1] < 8]
+            else:
+                locs = [loc for loc in locs if 10 <= loc[0] < 20 and 8 <= loc[1] < 15]
+        if(len(locs) == 0):
+            return None
+        locs = np.asarray(locs)
+        cost = np.abs(locs[:, 0] - self.robot.center[0]) + np.abs(locs[:, 1] - self.robot.center[1])
+        cost = cost.tolist()
+        # for each coordinate the cost is (x- center_x   + y- center_y)
+        # the distance of the neighbour away from the center of robot
+        locs = locs.tolist()
+        while (cost):
+            position = np.argmin(cost) # position gives index of minimum cost
+            coord = locs.pop(position)
+            cost.pop(position)
+            neighbours = np.asarray([[-2, 0], [-2, -1], [-2, 1], [2, 0], [2, -1], [2, 1], [0, -2], [1, -2], [-1, -2], [0, 2], [1, 2], [-1, 2]]) + coord
+            neighbours = self.__validInds(neighbours) # check if the coordinates in the list are valid or not
+            for neighbour in neighbours:
+                if(0 <= self.robot.center[0] < 10):
+                    if(0 <= self.robot.center[1] < 8):
+                        if(neighbour not in self.exploredNeighbours and 0 <= neighbour[0] < 10 and 0 <= neighbour[1] < 8):
+                            self.exploredNeighbours[neighbour] = True
+                            return neighbour
+                    else:
+                        if (neighbour not in self.exploredNeighbours and 0 <= neighbour[0] < 10 and 8 <= neighbour[1] < 15):
+                            self.exploredNeighbours[neighbour] = True
+                            return neighbour
+                else:
+                    if(10 <= self.robot.center[0] < 20):
+                        if (neighbour not in self.exploredNeighbours and 10 <= neighbour[0] < 20 and 0 <= neighbour[1] < 8):
+                            self.exploredNeighbours[neighbour] = True
+                            return neighbour
+                    else:
+                        if (neighbour not in self.exploredNeighbours and 10 <= neighbour[0] < 20 and 8 <= neighbour[1] < 15):
+                            self.exploredNeighbours[neighbour] = True
+                            return neighbour
+        return None
+        
+
+
     # Get valid and explored neighbours of unexplored spaces
     def getExploredNeighbour(self):
         # initial virtual wall = [0, 0, MAX_ROWS, MAX_COLS]

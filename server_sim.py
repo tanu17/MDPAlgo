@@ -189,6 +189,7 @@ def exploration(exp, limit, coverage):
         exp (Exploration): New instance of the exploration class
     """
     global currentMap, area
+    path = []
     time_limit = float(limit)
     elapsedTime = 0
     update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head, START, GOAL, 0)
@@ -196,6 +197,7 @@ def exploration(exp, limit, coverage):
     current = exp.moveStep() # Current will be for example (['w', 'w', 'w'], True)
     currentMap = exp.currentMap
     area = exp.exploredArea
+    path.append(tuple(exp.robot.center))
     visited = dict()
     steps = 0
     numCycle = 1
@@ -213,14 +215,24 @@ def exploration(exp, limit, coverage):
         area = exp.exploredArea
         steps += 1
         currentPos = tuple(exp.robot.center)
+        path.append(currentPos)
 
-        if (currentPos in visited):
+        if (currentPos in visited and len(path) > 9 and (path[-3] == currentPos or path[-4] == currentPos or path[-5] == currentPos or path[-6] == currentPos)):
             # If you have visited the coordinates before, increase the number of times which you have visited it
             visited[currentPos] += 1
             # If you have visited the coordinate more than three times
-            if (area > 15 and visited[currentPos] > 1) or (visited[currentPos] > 2):
+            if (area > 15 and visited[currentPos] > 1) or (visited[currentPos] > 3):
                 # Get closest neighbour that has been explored
-                neighbour = exp.getExploredNeighbour()
+                neighbour = exp.getCloseExploredNeighbour()
+                neighbour2 = exp.getExploredNeighbour()
+                if(neighbour != None or neighbour2 != None):
+                    if(neighbour == None and neighbour2 != None):
+                        neighbour = neighbour2
+                    elif(neighbour != None and neighbour2 != None):
+                        cost1 = abs(neighbour[0] - currentPos[0]) + abs(neighbour[1] - currentPos[1])
+                        cost2 = abs(neighbour2[0] - currentPos[0]) + abs(neighbour2[1] - currentPos[1])
+                        if(cost2 < cost1):
+                            neighbour = neighbour2
                 # If such a neighbour exists
                 if (neighbour):
                     neighbour = np.asarray(neighbour)

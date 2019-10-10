@@ -197,13 +197,13 @@ class Robot:
         # Right Bottom
         if self.direction == NORTH:
             self.getValue(zip([r+1]*distanceLong, range(c+2, c+distanceLong+2)),
-                          sensor_vals[4], distanceLong, False)
+                          sensor_vals[4], distanceLong, False, True)
         elif self.direction == EAST:
             self.getValue(zip(range(r+2, r+distanceLong+2), [c-1]*distanceLong),
-                          sensor_vals[4], distanceLong, False)
+                          sensor_vals[4], distanceLong, False, True)
         elif self.direction == WEST:
             self.getValue(zip(range(r-distanceLong-1, r-1), [c+1]*distanceLong)[::-1],
-                          sensor_vals[4], distanceLong, False)
+                          sensor_vals[4], distanceLong, False, True)
         else:
             self.getValue(zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1],
                           sensor_vals[4], distanceLong, False)
@@ -392,7 +392,32 @@ class Robot:
         hex_str = ['%X' % int(bits[i:i+4], 2) for i in range(0, len(bits)-3, 4)]
         return ''.join(hex_str)
 
+    # def descriptor_2(self):
+    #     bits = ''
+    #     for row in self.exploredMap[::-1, :]:
+    #         for bit in row:
+    #             if bit == 2:
+    #                 bits += '1'
+    #             elif bit == 1:
+    #                 bits += '0'
+    #     bits += '0'*(4 - len(bits) % 4)
+    #     hex_str = ['%X' % int(bits[i:i+4], 2) for i in range(0, len(bits)-3, 4)]
+    #     hex_str = hex_str[:-1]
+    #     return ''.join(hex_str)
+
+
     def descriptor_2(self):
+        descriptor = np.ones([20, 15]).astype(int)
+        descriptor[self.exploredMap[::-1, :] != 2] = 0
+        bits = ''
+        for i in range(len(descriptor)):
+            for j in range(len(descriptor[i])):
+                bits += str(descriptor[i][j])
+        # bits += '11'
+        hex_str = ['%X' % int(bits[i:i+4], 2) for i in range(0, len(bits)-3, 4)]
+        return ''.join(hex_str)
+
+    def descriptor_3(self):
         bits = ''
         for row in self.exploredMap[::-1, :]:
             for bit in row:

@@ -52,6 +52,7 @@ class Exploration:
         # initialize as boundary of the arena
         # Set the limits of unexplored area on the map
         self.virtualWall = [0, 0, MAX_ROWS, MAX_COLS]
+        self.alignRightCount = 0
 
     def __validInds(self, inds):
         """To check if the passed indices are valid or not
@@ -107,15 +108,41 @@ class Exploration:
     def nextMove(self):
         # Decides which direction is free and commands the robot the next action
         move = []
-        # multi step
-        # Number of spaces in front of the robot which is free and where there are obstacles on the right
-        # and all spaces detectable by the left middle, right top and right bottom sensors at these spaces have been explored
-        front = self.frontFree()
 
         if(not (self.sim) and self.robot.is_corner() == True):
-            move = [ALIGNFRONT, ALIGNRIGHT, LEFT]
+            move = [ALIGNFRONT, LEFT]
             self.robot.moveBot(LEFT)
         else:
+            if not (self.sim):
+                # Check if there is a wall in front for robot to calibrate
+                calibrate_front = self.robot.can_calibrate_front()
+                # Check if there is a wall to the right for the robot to calibrate
+                calibrate_right = self.robot.can_calibrate_right()
+                # If the robot is at a corner
+                if self.robot.is_corner():
+                    move.append(ALIGNFRONT)
+                    move.append(ALIGNRIGHT)
+                # If robot is not at a corner but there is a wall to the right for calibration
+                elif (calibrate_right[0]):
+                    self.alignRightCount += 1
+                    if(self.alignRightCount % 2) == 0:
+                        move.append(RIGHT)
+                        move.append(ALIGNFRONT)
+                        move.append(LEFT)
+                    else:
+                        # Append command from can_calibrate_right function
+                        move.append(calibrate_right[1])
+                # If robot is not at a corner and there is no wall to the right of the robot
+                # If there is a wall to the front for calibration
+                elif (calibrate_front[0]):
+                    # Append command from can_calibrate_front function
+                    move.append(calibrate_front[1])
+                print("Robot's centre: " + str(self.robot.center))
+                print("Robot's direction: " + str(self.robot.direction))
+            # multi step
+            # Number of spaces in front of the robot which is free and where there are obstacles on the right
+            # and all spaces detectable by the left middle, right top and right bottom sensors at these spaces have been explored
+            front = self.frontFree()
             # If right of robot is free
             if (self.checkFree([1, 2, 3, 0], self.robot.center)):
                 # Move robot to the right
@@ -168,24 +195,7 @@ class Exploration:
             #     self.robot.moveBot(RIGHT)
             #     move.extend(('O'))
             # If not a simulation
-            if not (self.sim):
-                # Check if there is a wall in front for robot to calibrate
-                calibrate_front = self.robot.can_calibrate_front()
-                # Check if there is a wall to the right for the robot to calibrate
-                calibrate_right = self.robot.can_calibrate_right()
-                # If the robot is at a corner
-                if self.robot.is_corner():
-                    move.append(ALIGNFRONT)
-                    move.append(ALIGNRIGHT)
-                # If robot is not at a corner but there is a wall to the right for calibration
-                elif (calibrate_right[0]):
-                    # Append command from can_calibrate_right function
-                    move.append(calibrate_right[1])
-                # If robot is not at a corner and there is no wall to the right of the robot
-                # If there is a wall to the front for calibration
-                elif (calibrate_front[0]):
-                    # Append command from can_calibrate_front function
-                    move.append(calibrate_front[1])
+            
         # Return list of moves
         return move
 

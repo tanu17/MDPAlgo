@@ -330,8 +330,19 @@ class Robot:
         # where final value of bits is 1111111100111111111111100111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111110011111111111110011111111111111111111100111111111111100111111111111111111111111111111111111111111111111111111111111111111100111111111111100111111111111111
 
     def descriptor_2(self):
+        descriptor = np.ones([20, 15]).astype(int)
+        descriptor[self.exploredMap[::-1, :] != 2] = 0
         bits = ''
-        for row in self.exploredMap[::, :]:
+        for i in range(len(descriptor)):
+            for j in range(len(descriptor[i])):
+                bits += str(descriptor[i][j])
+        # bits += '11'
+        hex_str = ['%X' % int(bits[i:i+4], 2) for i in range(0, len(bits)-3, 4)]
+        return ''.join(hex_str)
+
+    def descriptor_3(self):
+        bits = ''
+        for row in self.exploredMap[::-1, :]:
             for bit in row:
                 if bit == 2:
                     bits += '1'

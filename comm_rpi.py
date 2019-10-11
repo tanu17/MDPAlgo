@@ -545,7 +545,7 @@ class RPi(threading.Thread):
                     path.append(tuple(exp.robot.center))
                     elapsedTime = round(time.time()-t_s, 2)
                     # If not 100% coverage
-                    if (not current[1] and elapsedTime <= 5):
+                    if (not current[1]):
                         time_t = time.time()
                         move = current[0]
                         update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head,

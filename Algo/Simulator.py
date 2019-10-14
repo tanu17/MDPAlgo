@@ -173,7 +173,7 @@ class Robot:
             Numpy array of Numpy arrays: Sensor values from all sensors
         """
         distanceShort = 3
-        distanceLong = 4
+        distanceLong = 3
         r, c = self.center
 
         # Front Left

@@ -56,61 +56,91 @@ class Robot:
             self.head = self.center + [0, -1]
 
     def getValue(self, inds, value, distance, sr, right=False):
-        # No need to adjust sensor values for now as the Arduino team will be doing it
-        # Sensor may not be exactly at the edge of the robot
-        # Hence, we will need to adjust the sensor reading
-        # adjustment_value = 6
-        # if value != -1:
-            # Adjust the sensor reading by subtracting the number of cm the sensor is away from the edge of the robot
-            # Round to nearest 10 cm as it should not be the case where the obstacle does not lie exactly in the
-            # 10cm by 10cm space
-            # value = round(value - adjustment_value, -1)
         vals = []
-        # Distance is the number of spaces we assume that the sensor is accurate
-        if (value >= distance):
-            # If sensor value is greater than the range which we assume the sensor is accurate
-            # just assume that there are no obstacles within that accurate range
-            vals = [1]*distance
+        startInds = [(19, 0), (18, 0), (17, 0), (19, 1), (18, 1), (17, 1), (19, 2), (18, 2), (17, 2)]
+        goalInds = [(0, 12), (1, 12), (2, 12), (0, 13), (1, 13), (2, 13), (0, 14), (1, 14), (2, 14)]
+        if value == 0:
+            vals = [2]
+            for idx, coord in enumerate(inds):
+                r, c = coord
+                if (0 <= r < MAX_ROWS) and (0 <= c < MAX_COLS) and (coord not in startInds) and (coord not in goalInds):
+                    if self.phase == 1:
+                        # right = true only for right top sensor
+                        # sr is False only for bottom right and middle left sensor
+                        if (self.exploredMap[r][c] == 1 and vals[idx] == 2 and sr and (not right)):                            
+                            self.exploredMap[r][c] = vals[idx]
+                            self.marked[r][c] = 1 # Changed to = 1 not == 1
+                        # If any one of the condition above holds true and r, c is an obstacle, break out of the loop
+                        elif self.exploredMap[r][c] == 2:
+                            break
+                        elif (self.exploredMap[r][c] == 0): # If unexplored
+                            self.exploredMap[r][c] = vals[idx]
+                        # self.marker[r][c] is probably to indicate how many times the coordinate
+                        # has been marked
+                        self.marked[r][c] += 1
+                    else:
+                        if self.exploredMap[r][c] == 2:
+                            break
+                        elif (self.exploredMap[r][c] == 0):
+                            self.exploredMap[r][c] = vals[idx]
+                break
         else:
-            # If the sensor detects an obstacle within the accurate range
-            value = int(value)
-            # Set coordinates to be marked to be only those coordinates up to the obstacle
-            inds = inds[:value+1]
-            # Set spaces with no obstacle to be explored (value of 1) and space with obstacle with value of 2
-            vals = [1]*value + [2]
-        for idx, (r, c) in enumerate(inds): # For each supposedly free space
-            if (0 <= r < MAX_ROWS) and (0 <= c < MAX_COLS):
-                # for override
-                if self.phase == 1:
-                    # right = true only for right top sensor
-                    # sr is False only for bottom right and middle left sensor
-                    if (self.exploredMap[r][c] == 2 and vals[idx] == 1 and
-                       self.marked[r][c] < 2 and sr and (not right)):
-                        self.exploredMap[r][c] = vals[idx]
-                        self.marked[r][c] = 1 # Changed to = 1 not == 1
-                    # If any one of the condition above holds true and r, c is an obstacle, break out of the loop
-                    elif self.exploredMap[r][c] == 2:
-                        break
-                    elif (self.exploredMap[r][c] == 0): # If unexplored
-                        self.exploredMap[r][c] = vals[idx]
-                    # self.marker[r][c] is probably to indicate how many times the coordinate
-                    # has been marked
-                    self.marked[r][c] += 1
-                # self.phase will be marked as 2 in comm_rpi.py when robot has went one round around arena but
-                # there are still unmapped spaces
-                else:
-                    if self.exploredMap[r][c] == 2:
-                        break
-                    elif (self.exploredMap[r][c] == 0):
-                        self.exploredMap[r][c] = vals[idx]
-                # without override
-                # if self.exploredMap[r][c] == 0:
-                #     self.exploredMap[r][c] = vals[idx]
-                # # elif (sr and self.marked[r][c] == 0):
-                # #     self.exploredMap[r][c] = vals[idx]
-                # #     self.marked[r][c] = 1
-                # elif self.exploredMap[r][c] == 2:
-                #     break
+            # No need to adjust sensor values for now as the Arduino team will be doing it
+            # Sensor may not be exactly at the edge of the robot
+            # Hence, we will need to adjust the sensor reading
+            # adjustment_value = 6
+            # if value != -1:
+                # Adjust the sensor reading by subtracting the number of cm the sensor is away from the edge of the robot
+                # Round to nearest 10 cm as it should not be the case where the obstacle does not lie exactly in the
+                # 10cm by 10cm space
+                # value = round(value - adjustment_value, -1)
+            # Distance is the number of spaces we assume that the sensor is accurate
+            if (value >= distance):
+                # If sensor value is greater than the range which we assume the sensor is accurate
+                # just assume that there are no obstacles within that accurate range
+                vals = [1]*distance
+            else:
+                # If the sensor detects an obstacle within the accurate range
+                value = int(value)
+                # Set coordinates to be marked to be only those coordinates up to the obstacle
+                inds = inds[:value+1]
+                # Set spaces with no obstacle to be explored (value of 1) and space with obstacle with value of 2
+                vals = [1]*value + [2]
+            for idx, coord in enumerate(inds): # For each supposedly free space
+                r, c = coord
+                if (0 <= r < MAX_ROWS) and (0 <= c < MAX_COLS) and (coord not in startInds) and (coord not in goalInds):
+                    # for override
+                    if self.phase == 1:
+                        # right = true only for right top sensor
+                        # sr is False only for bottom right and middle left sensor
+                        if (self.exploredMap[r][c] == 2 and vals[idx] == 1 and sr and (not right)):
+                            # and self.marked[r][c] < 2 
+                            
+                            self.exploredMap[r][c] = vals[idx]
+                            self.marked[r][c] = 1 # Changed to = 1 not == 1
+                        # If any one of the condition above holds true and r, c is an obstacle, break out of the loop
+                        elif self.exploredMap[r][c] == 2:
+                            break
+                        elif (self.exploredMap[r][c] == 0): # If unexplored
+                            self.exploredMap[r][c] = vals[idx]
+                        # self.marker[r][c] is probably to indicate how many times the coordinate
+                        # has been marked
+                        self.marked[r][c] += 1
+                    # self.phase will be marked as 2 in comm_rpi.py when robot has went one round around arena but
+                    # there are still unmapped spaces
+                    else:
+                        if self.exploredMap[r][c] == 2:
+                            break
+                        elif (self.exploredMap[r][c] == 0):
+                            self.exploredMap[r][c] = vals[idx]
+                    # without override
+                    # if self.exploredMap[r][c] == 0:
+                    #     self.exploredMap[r][c] = vals[idx]
+                    # # elif (sr and self.marked[r][c] == 0):
+                    # #     self.exploredMap[r][c] = vals[idx]
+                    # #     self.marked[r][c] = 1
+                    # elif self.exploredMap[r][c] == 2:
+                    #     break
 
 
     def getSensors(self, sensor_vals):

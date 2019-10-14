@@ -20,7 +20,8 @@ ALIGNRIGHT = "P" # Tell robot to align itself using obstacles on the right
 ALIGNFRONT = "H" # Tell robot to align itself using obstacles on the front
 PICTURE = "I"
 
-
+ENDEXPLORATIONALIGNSOUTH = "Y"
+ENDEXPLORATIONWEST = "M"
 
 ROTATE180 = "J"
 FORWARD2 = "Q"

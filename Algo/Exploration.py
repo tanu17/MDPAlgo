@@ -38,6 +38,9 @@ class Exploration:
         self.timeLimit = timeLimit
         self.exploredArea = 0
         self.currentMap = np.zeros([20, 15])
+        # Mark start as free
+        self.currentMap[17:20, 0:3] = 1
+        self.currentMap[0:3, 12:15] = 1
         # call class according to running simulator or real run
         if sim:
             from Simulator import Robot
@@ -53,6 +56,7 @@ class Exploration:
         # Set the limits of unexplored area on the map
         self.virtualWall = [0, 0, MAX_ROWS, MAX_COLS]
         self.alignRightCount = 0
+        self.justCheckedRight = False
 
     def __validInds(self, inds):
         """To check if the passed indices are valid or not
@@ -125,7 +129,7 @@ class Exploration:
                 # If robot is not at a corner but there is a wall to the right for calibration
                 elif (calibrate_right[0]):
                     self.alignRightCount += 1
-                    if(self.alignRightCount % 2) == 0:
+                    if(self.alignRightCount % 3) == 0:
                         move.append(RIGHT)
                         move.append(ALIGNFRONT)
                         move.append(LEFT)
@@ -137,65 +141,84 @@ class Exploration:
                 elif (calibrate_front[0]):
                     # Append command from can_calibrate_front function
                     move.append(calibrate_front[1])
-                print("Robot's centre: " + str(self.robot.center))
-                print("Robot's direction: " + str(self.robot.direction))
             # multi step
             # Number of spaces in front of the robot which is free and where there are obstacles on the right
             # and all spaces detectable by the left middle, right top and right bottom sensors at these spaces have been explored
             front = self.frontFree()
-            # If right of robot is free
-            if (self.checkFree([1, 2, 3, 0], self.robot.center)):
-                # Move robot to the right
-                self.robot.moveBot(RIGHT)
-                move.append(RIGHT)
-                front = self.frontFree()
-                # Move robot forward according to frontFree function
-                for i in range(front):
-                    self.robot.moveBot(FORWARD)
-                move.extend([FORWARD]*front)
-            # If front > 0
-            elif (front):
-                # Move robot forward
-                for i in range(front):
-                    self.robot.moveBot(FORWARD)
-                move.extend([FORWARD]*front)
-            # Else if the robot's left is free
-            elif (self.checkFree([3, 0, 1, 2], self.robot.center)):
-                # Move robot to the left
-                self.robot.moveBot(LEFT)
-                move.append(LEFT)
-                front = self.frontFree()
-                for i in range(front):
-                    self.robot.moveBot(FORWARD)
-                move.extend([FORWARD]*front)
-            # Else, turn the robot around
-            else:
-                self.robot.moveBot(RIGHT)
-                self.robot.moveBot(RIGHT)
-                move.append(RIGHT)
-                move.append(RIGHT)
-            # single step
-            # if (self.checkFree([1, 2, 3, 0], self.robot.center)):
-            #     self.robot.moveBot(RIGHT)
-            #     move.append(RIGHT)
-            #     if (self.checkFree([0, 1, 2, 3], self.robot.center)):
-            #         self.robot.moveBot(FORWARD)
-            #         move.append(FORWARD)
-            # elif (self.checkFree([0, 1, 2, 3], self.robot.center)):
-            #     self.robot.moveBot(FORWARD)
-            #     move.append(FORWARD)
-            # elif (self.checkFree([3, 0, 1, 2], self.robot.center)):
-            #     self.robot.moveBot(LEFT)
-            #     move.append(LEFT)
-            #     if (self.checkFree([0, 1, 2, 3], self.robot.center)):
-            #         self.robot.moveBot(FORWARD)
-            #         move.append(FORWARD)
-            # else:
-            #     self.robot.moveBot(RIGHT)
-            #     self.robot.moveBot(RIGHT)
-            #     move.extend(('O'))
-            # If not a simulation
             
+            # If right of robot is free
+            if(self.justCheckedRight == True):
+                self.justCheckedRight = False
+                if (front):
+                    # Move robot forward
+                    for i in range(front):
+                        self.robot.moveBot(FORWARD)
+                    move.extend([FORWARD]*front)
+                elif (self.checkFree([1, 2, 3, 0], self.robot.center)):
+                    # Move robot to the right
+                    self.robot.moveBot(RIGHT)
+                    move.append(RIGHT)
+                    front = self.frontFree()
+                    # Move robot forward according to frontFree function
+                    for i in range(front):
+                        self.robot.moveBot(FORWARD)
+                    move.extend([FORWARD]*front)
+                # Else if the robot's left is free
+                elif (self.checkFree([3, 0, 1, 2], self.robot.center)):
+                    # Move robot to the left
+                    self.robot.moveBot(LEFT)
+                    move.append(LEFT)
+                    front = self.frontFree()
+                    for i in range(front):
+                        self.robot.moveBot(FORWARD)
+                    move.extend([FORWARD]*front)
+                elif(self.checkLeftUnexplored()):
+                    self.robot.moveBot(LEFT)
+                    move.append(LEFT)
+                # Else, turn the robot around
+                else:
+                    self.robot.moveBot(RIGHT)
+                    self.robot.moveBot(RIGHT)
+                    move.append(RIGHT)
+                    move.append(RIGHT)
+            else:   
+                if (self.checkFree([1, 2, 3, 0], self.robot.center)):
+                    # Move robot to the right
+                    self.robot.moveBot(RIGHT)
+                    move.append(RIGHT)
+                    front = self.frontFree()
+                    # Move robot forward according to frontFree function
+                    for i in range(front):
+                        self.robot.moveBot(FORWARD)
+                    move.extend([FORWARD]*front)
+                elif(self.checkRightUnexplored()):
+                    self.justCheckedRight = True
+                    self.robot.moveBot(RIGHT)
+                    move.append(RIGHT)
+                # If front > 0
+                elif (front):
+                    # Move robot forward
+                    for i in range(front):
+                        self.robot.moveBot(FORWARD)
+                    move.extend([FORWARD]*front)
+                # Else if the robot's left is free
+                elif (self.checkFree([3, 0, 1, 2], self.robot.center)):
+                    # Move robot to the left
+                    self.robot.moveBot(LEFT)
+                    move.append(LEFT)
+                    front = self.frontFree()
+                    for i in range(front):
+                        self.robot.moveBot(FORWARD)
+                    move.extend([FORWARD]*front)
+                elif(self.checkLeftUnexplored()):
+                    self.robot.moveBot(LEFT)
+                    move.append(LEFT)
+                # Else, turn the robot around
+                else:
+                    self.robot.moveBot(RIGHT)
+                    self.robot.moveBot(RIGHT)
+                    move.append(RIGHT)
+                    move.append(RIGHT)
         # Return list of moves
         return move
 
@@ -225,6 +248,44 @@ class Exploration:
         else:
             return directionFree[3]
 
+    def checkLeftUnexplored(self):
+        r, c = self.robot.center
+        if self.robot.direction == NORTH:
+            if(c-2 < 0):
+                return False
+            return (self.currentMap[r][c - 2] == 0 or self.currentMap[r+1][c - 2] == 0)
+        elif self.robot.direction == EAST:
+            if(r-2 < 0):
+                return False
+            return (self.currentMap[r-2][c] == 0 or self.currentMap[r-2][c-1] == 0)
+        elif self.robot.direction == SOUTH:
+            if(c+2 >= MAX_COLS):
+                return False
+            return (self.currentMap[r][c+2] == 0 or self.currentMap[r-1][c+2] == 0)
+        else:
+            if(r+2 >= MAX_ROWS):
+                return False
+            return (self.currentMap[r+2][c] == 0 or self.currentMap[r+2][c+1] == 0)
+    
+    def checkRightUnexplored(self):
+        r, c = self.robot.center
+        if self.robot.direction == NORTH:
+            if(c+2 >= MAX_COLS):
+                return False
+            return (self.currentMap[r][c + 2] == 0)
+        elif self.robot.direction == EAST:
+            if(r+2 >= MAX_ROWS):
+                return False
+            return (self.currentMap[r+2][c] == 0)
+        elif self.robot.direction == SOUTH:
+            if(c-2 < 0):
+                return False
+            return (self.currentMap[r][c-2] == 0)
+        else:
+            if(r-2 < 0):
+                return False
+            return (self.currentMap[r-2][c] == 0)
+    
     def validMove(self, inds):
         """Checks if all the three cells on one side of the robot are free
 
@@ -237,8 +298,7 @@ class Exploration:
         for (r, c) in inds:
             # self.virtualWall indicates the boundaries of unexplored area
             # If the indices are not within the unexplored area
-            if not ((self.virtualWall[0] <= r < self.virtualWall[2]) and (
-                     self.virtualWall[1] <= c < self.virtualWall[3])):
+            if not ((0 <= r < MAX_ROWS) and (0 <= c < MAX_COLS)):
                 # Indicate that the move is not valid
                 return False
         # Check if all three indices have a value of 1 (Explored and is free)
@@ -299,47 +359,48 @@ class Exploration:
         counter = 0 # Keeps track of number of moves the robot can make that are directly in front
         # If robot is facing north and three spaces immediately to the north of robot is within unexplored boundaries
         # and has no obstacles
+        
         if self.robot.direction == NORTH and self.validMove([[r-2, c], [r-2, c-1], [r-2, c+1]]):
             # Increase counter by 1
             counter = 1
-            while(True):
-                # If all three spaces immediately to the north of the robot is free
-                # and the three spaces immediately to the east of the robot is not free
-                # and all coordinates reachable by sensors are explored at position with coordinate [r-counter, c]
-                # increase counter by 1
-                if (self.validMove([[r-2-counter, c], [r-2-counter, c-1], [r-2-counter, c+1]])) and\
-                        not self.checkFree([1, 2, 3, 0], [r-(counter), c]) and\
-                        self.checkExplored([r-(counter), c]):
-                    counter += 1
-                else:
-                    break
+            # while(True):
+            #     # If all three spaces immediately to the north of the robot is free
+            #     # and the three spaces immediately to the east of the robot is not free
+            #     # and all coordinates reachable by sensors are explored at position with coordinate [r-counter, c]
+            #     # increase counter by 1
+            #     if (self.validMove([[r-2-counter, c], [r-2-counter, c-1], [r-2-counter, c+1]])) and\
+            #             not self.checkFree([1, 2, 3, 0], [r-(counter), c]) and\
+            #             self.checkExplored([r-(counter), c]):
+            #         counter += 1
+            #     else:
+            #         break
         elif self.robot.direction == EAST and self.validMove([[r, c+2], [r-1, c+2], [r+1, c+2]]):
             counter = 1
-            while(True):
-                if (self.validMove([[r, c+2+counter], [r-1, c+2+counter], [r+1, c+2+counter]])) and\
-                        not self.checkFree([1, 2, 3, 0], [r, c+(counter)]) and\
-                        self.checkExplored([r, c+(counter)]):
-                    counter += 1
-                else:
-                    break
+            # while(True):
+            #     if (self.validMove([[r, c+2+counter], [r-1, c+2+counter], [r+1, c+2+counter]])) and\
+            #             not self.checkFree([1, 2, 3, 0], [r, c+(counter)]) and\
+            #             self.checkExplored([r, c+(counter)]):
+            #         counter += 1
+            #     else:
+            #         break
         elif self.robot.direction == WEST and self.validMove([[r, c-2], [r-1, c-2], [r+1, c-2]]):
             counter = 1
-            while(True):
-                if (self.validMove([[r, c-2-counter], [r-1, c-2-counter], [r+1, c-2-counter]])) and\
-                        not self.checkFree([1, 2, 3, 0], [r, c-(counter)]) and\
-                        self.checkExplored([r, c-(counter)]):
-                    counter += 1
-                else:
-                    break
+            # while(True):
+            #     if (self.validMove([[r, c-2-counter], [r-1, c-2-counter], [r+1, c-2-counter]])) and\
+            #             not self.checkFree([1, 2, 3, 0], [r, c-(counter)]) and\
+            #             self.checkExplored([r, c-(counter)]):
+            #         counter += 1
+            #     else:
+            #         break
         elif self.robot.direction == SOUTH and self.validMove([[r+2, c], [r+2, c-1], [r+2, c+1]]):
             counter = 1
-            while(True):
-                if (self.validMove([[r+2+counter, c], [r+2+counter, c-1], [r+2+counter, c+1]])) and\
-                        not self.checkFree([1, 2, 3, 0], [r+(counter), c]) and\
-                        self.checkExplored([r+(counter), c]):
-                    counter += 1
-                else:
-                    break
+            # while(True):
+            #     if (self.validMove([[r+2+counter, c], [r+2+counter, c-1], [r+2+counter, c+1]])) and\
+            #             not self.checkFree([1, 2, 3, 0], [r+(counter), c]) and\
+            #             self.checkExplored([r+(counter), c]):
+            #         counter += 1
+            #     else:
+            #         break
         return counter
 
     # ***Update according to sensor placement
@@ -437,16 +498,16 @@ class Exploration:
     def explore(self):
         """Runs the exploration till the map is fully explored of time runs out
         """
-        print "Starting exploration ..."
+        print("Starting exploration ...")
         startTime = time.time()
         endTime = startTime + self.timeLimit
 
         while(time.time() <= endTime):
             if (self.moveStep()):
-                print "Exploration completed !"
+                print("Exploration completed !")
                 return
 
-        print "Time over !"
+        print ("Time over !")
         return
 
     def getCloseExploredNeighbour(self):

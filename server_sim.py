@@ -134,7 +134,7 @@ class ResetHandler(web.RequestHandler):
         # in order to qualify for leaderboard A, exploration should stop within 6 minutes
         # Here, time limit is set as 5
         exp = Exploration(map_name, 5)
-        print exp.currentMap
+        print (exp.currentMap)
         # Call update function to reset map in front end
         update(np.zeros([20, 15]), exp.exploredArea, exp.robot.center, exp.robot.head,
                START, GOAL, 0)
@@ -210,94 +210,176 @@ def exploration(exp, limit, coverage):
         # Update front end
         update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head, START, GOAL,
                elapsedTime)
-        current = exp.moveStep()
-        currentMap = exp.currentMap
-        area = exp.exploredArea
-        steps += 1
-        currentPos = tuple(exp.robot.center)
-        path.append(currentPos)
 
-        if (currentPos in visited and len(path) > 9 and (path[-3] == currentPos or path[-4] == currentPos or path[-5] == currentPos or path[-6] == currentPos)):
-            # If you have visited the coordinates before, increase the number of times which you have visited it
-            visited[currentPos] += 1
-            # If you have visited the coordinate more than three times
-            if (area > 15 and visited[currentPos] > 1) or (visited[currentPos] > 3):
-                # Get closest neighbour that has been explored
-                neighbour = exp.getCloseExploredNeighbour()
-                neighbour2 = exp.getExploredNeighbour()
-                if(neighbour != None or neighbour2 != None):
-                    if(neighbour == None and neighbour2 != None):
-                        neighbour = neighbour2
-                    elif(neighbour != None and neighbour2 != None):
-                        cost1 = abs(neighbour[0] - currentPos[0]) + abs(neighbour[1] - currentPos[1])
-                        cost2 = abs(neighbour2[0] - currentPos[0]) + abs(neighbour2[1] - currentPos[1])
-                        if(cost2 < cost1):
-                            neighbour = neighbour2
-                # If such a neighbour exists
-                if (neighbour):
-                    neighbour = np.asarray(neighbour)
-                    # Find the shortest path from the robot's current position to the neighbour
-                    fsp = FastestPath(currentMap, exp.robot.center, neighbour,
-                                      exp.robot.direction, None)
-                    fastestPath(fsp, neighbour, exp.exploredArea, None)
-                    exp.robot.center = neighbour
-                    exp.robot.head = fsp.robot.head
-                    exp.robot.direction = fsp.robot.direction
-                    if (exp.robot.direction == NORTH):
-                        if(0<=exp.robot.center[1]+2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 ):
-                            exp.robot.moveBot(RIGHT)
-                            exp.robot.getSensors()
-                        elif(0<=exp.robot.center[1]-2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 1][exp.robot.center[1] -2] == 0)):
-                            exp.robot.moveBot(LEFT)
-                            exp.robot.getSensors()
-                    elif (exp.robot.direction == SOUTH):
-                        if(0<= exp.robot.center[1] +2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 1][exp.robot.center[1] + 2] == 0)):
-                            exp.robot.moveBot(LEFT)
-                            exp.robot.getSensors()
-                        elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
-                            exp.robot.moveBot(RIGHT)
-                            exp.robot.getSensors()
-                    elif (exp.robot.direction == EAST):
-                        if(0<= exp.robot.center[0]+2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0):
-                            exp.robot.moveBot(RIGHT)
-                            exp.robot.getSensors()
-                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 2][exp.robot.center[1] - 1] == 0)):
-                            exp.robot.moveBot(LEFT)
-                            exp.robot.getSensors()
-                    else:
-                        if(0<= exp.robot.center[0]+2 < MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 2][exp.robot.center[1] + 1] == 0)):
-                            exp.robot.moveBot(LEFT)
-                            exp.robot.getSensors()
-                        elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0)):
-                            exp.robot.moveBot(RIGHT)
-                            exp.robot.getSensors()
-                        
+        if (numCycle > 1 and steps > 4 and exp.exploredArea < 100):
+            neighbour = exp.getExploredNeighbour()
+            if (neighbour):
+                neighbour = np.asarray(neighbour)
+                fsp = FastestPath(currentMap, exp.robot.center, neighbour,
+                                    exp.robot.direction, None)
+                # Move the robot and update front end
+                fastestPath(fsp, neighbour, exp.exploredArea, None)
+                # Set robot's new center to be that neighbour after moving
+                exp.robot.center = neighbour
+                # Update coordinates of robot's head
+                exp.robot.head = fsp.robot.head
+                # Update the robot's direction after moving
+                exp.robot.direction = fsp.robot.direction
+                # Update map based on sensor values
+                exp.robot.getSensors()
+                if (exp.robot.direction == NORTH):
+                    if(0<=exp.robot.center[1]+2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 ):
+                        exp.robot.moveBot(RIGHT)
+                        exp.robot.getSensors()
+                    elif(0<=exp.robot.center[1]-2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 1][exp.robot.center[1] -2] == 0)):
+                        exp.robot.moveBot(LEFT)
+                        exp.robot.getSensors()
+                elif (exp.robot.direction == SOUTH):
+                    if(0<= exp.robot.center[1] +2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 1][exp.robot.center[1] + 2] == 0)):
+                        exp.robot.moveBot(LEFT)
+                        exp.robot.getSensors()
+                    elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
+                        exp.robot.moveBot(RIGHT)
+                        exp.robot.getSensors()
+                elif (exp.robot.direction == EAST):
+                    if(0<= exp.robot.center[0]+2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0):
+                        exp.robot.moveBot(RIGHT)
+                        exp.robot.getSensors()
+                    elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 2][exp.robot.center[1] - 1] == 0)):
+                        exp.robot.moveBot(LEFT)
+                        exp.robot.getSensors()
+                else:
+                    if(0<= exp.robot.center[0]+2 < MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 2][exp.robot.center[1] + 1] == 0)):
+                        exp.robot.moveBot(LEFT)
+                        exp.robot.getSensors()
+                    elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0)):
+                        exp.robot.moveBot(RIGHT)
+                        exp.robot.getSensors()
+            else:
                 # When there are no such neighbour and robot is stuck, break out of while loop and stop exploration
-                else:
-                    break
+                break
         else:
-            # If you have not visited the coordinate, indicate that you have visited it before
-            visited[currentPos] = 1
-        if (np.array_equal(exp.robot.center, START)):
-            numCycle += 1
-            if (numCycle > 1 and steps > 4 and exp.exploredArea < 100):
-                neighbour = exp.getExploredNeighbour()
-                if (neighbour):
-                    neighbour = np.asarray(neighbour)
-                    fsp = FastestPath(currentMap, exp.robot.center, neighbour,
-                                      exp.robot.direction, None)
-                    # Move the robot and update front end
-                    fastestPath(fsp, neighbour, exp.exploredArea, None)
-                    # Set robot's new center to be that neighbour after moving
-                    exp.robot.center = neighbour
-                    # Update coordinates of robot's head
-                    exp.robot.head = fsp.robot.head
-                    # Update the robot's direction after moving
-                    exp.robot.direction = fsp.robot.direction
-                    # Update map based on sensor values
-                    exp.robot.getSensors()
-                else:
+            r, c = exp.robot.center
+            current = exp.moveStep()
+            currentMap = exp.currentMap
+            area = exp.exploredArea
+            steps += 1
+            currentPos = tuple(exp.robot.center)
+            path.append(currentPos)
+            if(r == 18 and c == 8):
+                print(path)
+            if (currentPos in visited):
+                # If you have visited the coordinates before, increase the number of times which you have visited it
+                visited[currentPos] += 1
+                # If you have visited the coordinate more than three times
+                if ((area > 15 and visited[currentPos] > 1) or (visited[currentPos] > 3)) and area < 99 and len(path) > 9 and (path[-1] == currentPos or path[-2] == currentPos or path[-3] == currentPos or path[-4] == currentPos ):
+                    # Get closest neighbour that has been explored
+                    neighbour = exp.getCloseExploredNeighbour()
+                    neighbour2 = exp.getExploredNeighbour()
+                    if(neighbour != None or neighbour2 != None):
+                        if(neighbour == None and neighbour2 != None):
+                            neighbour = neighbour2
+                        elif(neighbour != None and neighbour2 != None):
+                            cost1 = abs(neighbour[0] - currentPos[0]) + abs(neighbour[1] - currentPos[1])
+                            cost2 = abs(neighbour2[0] - currentPos[0]) + abs(neighbour2[1] - currentPos[1])
+                            if(cost2 < cost1):
+                                neighbour = neighbour2
+                    # If such a neighbour exists
+                    if (neighbour):
+                        neighbour = np.asarray(neighbour)
+                        # Find the shortest path from the robot's current position to the neighbour
+                        fsp = FastestPath(currentMap, exp.robot.center, neighbour,
+                                            exp.robot.direction, None)
+                        fastestPath(fsp, neighbour, exp.exploredArea, None)
+                        exp.robot.center = neighbour
+                        exp.robot.head = fsp.robot.head
+                        exp.robot.direction = fsp.robot.direction
+                        exp.robot.getSensors()
+                        if (exp.robot.direction == NORTH):
+                            if(0<=exp.robot.center[1]+2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 ):
+                                exp.robot.moveBot(RIGHT)
+                                exp.robot.getSensors()
+                            elif(0<=exp.robot.center[1]-2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 1][exp.robot.center[1] -2] == 0)):
+                                exp.robot.moveBot(LEFT)
+                                exp.robot.getSensors()
+                        elif (exp.robot.direction == SOUTH):
+                            if(0<= exp.robot.center[1] +2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 1][exp.robot.center[1] + 2] == 0)):
+                                exp.robot.moveBot(LEFT)
+                                exp.robot.getSensors()
+                            elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
+                                exp.robot.moveBot(RIGHT)
+                                exp.robot.getSensors()
+                        elif (exp.robot.direction == EAST):
+                            if(0<= exp.robot.center[0]+2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0):
+                                exp.robot.moveBot(RIGHT)
+                                exp.robot.getSensors()
+                            elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 2][exp.robot.center[1] - 1] == 0)):
+                                exp.robot.moveBot(LEFT)
+                                exp.robot.getSensors()
+                        else:
+                            if(0<= exp.robot.center[0]+2 < MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 2][exp.robot.center[1] + 1] == 0)):
+                                exp.robot.moveBot(LEFT)
+                                exp.robot.getSensors()
+                            elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0)):
+                                exp.robot.moveBot(RIGHT)
+                                exp.robot.getSensors()
+                            
                     # When there are no such neighbour and robot is stuck, break out of while loop and stop exploration
+                    else:
+                        break
+            else:
+                # If you have not visited the coordinate, indicate that you have visited it before
+                visited[currentPos] = 1
+            if (np.array_equal(exp.robot.center, START)):
+                numCycle += 1
+                if (numCycle > 1 and steps > 4 and exp.exploredArea < 100):
+                    neighbour = exp.getExploredNeighbour()
+                    if (neighbour):
+                        neighbour = np.asarray(neighbour)
+                        fsp = FastestPath(currentMap, exp.robot.center, neighbour,
+                                            exp.robot.direction, None)
+                        # Move the robot and update front end
+                        fastestPath(fsp, neighbour, exp.exploredArea, None)
+                        # Set robot's new center to be that neighbour after moving
+                        exp.robot.center = neighbour
+                        # Update coordinates of robot's head
+                        exp.robot.head = fsp.robot.head
+                        # Update the robot's direction after moving
+                        exp.robot.direction = fsp.robot.direction
+                        # Update map based on sensor values
+                        exp.robot.getSensors()
+                        if (exp.robot.direction == NORTH):
+                            if(0<=exp.robot.center[1]+2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 ):
+                                exp.robot.moveBot(RIGHT)
+                                exp.robot.getSensors()
+                            elif(0<=exp.robot.center[1]-2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 1][exp.robot.center[1] -2] == 0)):
+                                exp.robot.moveBot(LEFT)
+                                exp.robot.getSensors()
+                        elif (exp.robot.direction == SOUTH):
+                            if(0<= exp.robot.center[1] +2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 1][exp.robot.center[1] + 2] == 0)):
+                                exp.robot.moveBot(LEFT)
+                                exp.robot.getSensors()
+                            elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
+                                exp.robot.moveBot(RIGHT)
+                                exp.robot.getSensors()
+                        elif (exp.robot.direction == EAST):
+                            if(0<= exp.robot.center[0]+2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0):
+                                exp.robot.moveBot(RIGHT)
+                                exp.robot.getSensors()
+                            elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 2][exp.robot.center[1] - 1] == 0)):
+                                exp.robot.moveBot(LEFT)
+                                exp.robot.getSensors()
+                        else:
+                            if(0<= exp.robot.center[0]+2 < MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 2][exp.robot.center[1] + 1] == 0)):
+                                exp.robot.moveBot(LEFT)
+                                exp.robot.getSensors()
+                            elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0)):
+                                exp.robot.moveBot(RIGHT)
+                                exp.robot.getSensors()
+                    else:
+                        # When there are no such neighbour and robot is stuck, break out of while loop and stop exploration
+                        break
+                else:
                     break
         # Simulate the velocity of the robot according to the specified time step by pausing execution using time.sleep method
         time.sleep(float(step))

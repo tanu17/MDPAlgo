@@ -331,7 +331,6 @@ def fastestPath(fsp, goal, area, waypoint, backwards=False):
         fsp.getFastestPath()
     else:
         fsp.getFastestPath(backwards=True)
-    print("FASTEST backwards: " + str(backwards))
     logger(json.dumps(fsp.path))
     while (fsp.robot.center.tolist() != goal.tolist()):
         if(backwards == False):
@@ -401,7 +400,7 @@ def arduino_message_formatter(movement, getSensor=True):
         for i in range(len(string)-1):
             if(string[i] == string[i+1]):
                 count+=1
-                if count == 5:
+                if count == 6:
                     res += str(count)
                     res += string[i+1]
                     count = 0
@@ -417,22 +416,26 @@ def arduino_message_formatter(movement, getSensor=True):
     #--------------------> Added combine movement
     
         for i in range(0, len(res), 2):
-            if res[i]==FORWARD:
-                if res[i+1]=="1":
-                    res1 += FORWARD
-                elif res[i+1]=="2":
-                    res1 += FORWARD2
-                elif res[i + 1] == "3":
-                    res1 += FORWARD3
-                elif res[i+1]=="4":
-                    res1 += FORWARD2 + FORWARD2
-                elif res[i+1]=="5":
-                    res1 += FORWARD2 + FORWARD3
-            elif (res[i]==RIGHT and res[i+1] == "2") or (res[i]==LEFT and res[i+1] == "2"):
-                res1 += ROTATE180
-            else:
-                for j in range(int(res[i+1])):
-                    res1 += res[i]
+            res1 += res[i]
+            res1 += res[i+1]
+            if (res[i]==RIGHT and res[i+1] == "2") or (res[i]==LEFT and res[i+1] == "2"):
+                res1 += "J1"
+        #     if res[i]==FORWARD:
+        #         if res[i+1]=="1":
+        #             res1 += FORWARD
+        #         elif res[i+1]=="2":
+        #             res1 += FORWARD2
+        #         elif res[i + 1] == "3":
+        #             res1 += FORWARD3
+        #         elif res[i+1]=="4":
+        #             res1 += FORWARD2 + FORWARD2
+        #         elif res[i+1]=="5":
+        #             res1 += FORWARD2 + FORWARD3
+        #     elif (res[i]==RIGHT and res[i+1] == "2") or (res[i]==LEFT and res[i+1] == "2"):
+        #         res1 += ROTATE180
+        #     else:
+        #         for j in range(int(res[i+1])):
+        #             res1 += res[i]
 
         # for i in range(len(res)):
         #     if i+2<=len(res) and res[i]==FORWARD and res[i+1]=="2":
@@ -450,9 +453,11 @@ def arduino_message_formatter(movement, getSensor=True):
         #     else:
         #         res1 += res[i]
     if getSensor == True:
-        return "A" + res1 + SENSOR
+        return "A" + res1 + SENSOR + "1"
     else:
         return "A" + res1
+
+# def fastestPathAddRightAlign():
 
 
 class RPi(threading.Thread):
@@ -797,17 +802,11 @@ class RPi(threading.Thread):
                     log_file.flush()
                 # Start fastest path
                 elif (split_data[0] == 'FASTEST'):
-                    print("Fastest currentMap: " + str(currentMap))
-                    print("Fastest START: " + str(START))
-                    print("Fastest GOAL: " + str(GOAL))
-                    print("Fastest direction: " + str(direction))
-                    print("waypoint: " + str(waypoint))
                     fsp = FastestPath(currentMap, START, GOAL, direction, waypoint, sim=False)
                     #file1= np.ones([20, 15])
                     #sim=True
                     #fsp = FastestPath(file1, START, GOAL, direction, waypoint, sim)
                     currentPos = tuple(fsp.robot.center)
-                    print("Fastest currentPos: " + str(currentPos))
                     fastestPath(fsp, GOAL, 300, waypoint, backwards=False)
                     # move = fsp.movement
                     move = fsp.movement

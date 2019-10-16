@@ -490,7 +490,7 @@ class Exploration:
         move = self.nextMove()
         self.getExploredArea()
         # If full coverage
-        if (self.exploredArea > 100):
+        if (self.exploredArea == 100):
             return move, True
         else:
             return move, False

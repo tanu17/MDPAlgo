@@ -394,6 +394,7 @@ class FastestPath:
                     self.__setDirection(prev.coord, current.coord)
                 else:
                     self.__setDirection(prev.coord, current.coord, backwards=True)
+            print("current: " + str(current))
             # if goal is reached trace back the path
             if (current == goal):
                 path = []
@@ -451,16 +452,20 @@ class FastestPath:
     def getFastestPath(self, backwards = False):
         """To call the fastest path algorithm and handle the case if there is a way-point or not
         """
+        print("getFastestPath backwards: " + str(backwards))
         path = []
         start = copy.copy(self.start)
         # If there is a waypoint
         if (self.waypoint):
+            print("getFastestPath self.waypoint: " + str(self.waypoint))
             h_n = self.__getHeuristicCosts(self.waypoint)
             self.__initGraph(h_n)
             # Set waypoint as the goal first and find shortest path from start to goal
             if(backwards == False):
+                print("getFastestPath not backwards astar")
                 fsp = self.__astar(start, self.waypoint)
             else:
+                print("getFastestPath backwards astar")
                 fsp = self.__astar(start, self.waypoint, backwards=True)
             # Set start to be way point
             start = copy.copy(self.waypoint)

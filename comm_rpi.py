@@ -331,6 +331,7 @@ def fastestPath(fsp, goal, area, waypoint, backwards=False):
         fsp.getFastestPath()
     else:
         fsp.getFastestPath(backwards=True)
+    print("FASTEST backwards: " + str(backwards))
     logger(json.dumps(fsp.path))
     while (fsp.robot.center.tolist() != goal.tolist()):
         if(backwards == False):
@@ -396,7 +397,6 @@ def arduino_message_formatter(movement, getSensor=True):
 
         #Add in first character
         res += string[0]
-
         #Iterate through loop, skipping last one
         for i in range(len(string)-1):
             if(string[i] == string[i+1]):
@@ -404,13 +404,15 @@ def arduino_message_formatter(movement, getSensor=True):
                 if count == 5:
                     res += str(count)
                     res += string[i+1]
-                    count = 1
+                    count = 0
             else:
                 res += str(count)
                 res += string[i+1]
                 count = 1
-        #print last one
-        res += str(count)
+        if(count != 0):
+          res += str(count)
+        else:
+          res = res[:-1]
         
     #--------------------> Added combine movement
     
@@ -447,9 +449,6 @@ def arduino_message_formatter(movement, getSensor=True):
         #         pass
         #     else:
         #         res1 += res[i]
-
-    print("res: " + res)
-    print("res1: " + res1)
     if getSensor == True:
         return "A" + res1 + SENSOR
     else:
@@ -550,7 +549,6 @@ class RPi(threading.Thread):
                     sensors = map(int, split_data[1:])
                     currentPos = tuple(exp.robot.center)
                     if(fastestPathStart == True):
-                        print("FastestPathStart is true")
                         fastestPathStart = False
                         returnFastestPath = True
                         if (fastestPathStartCommand == RIGHT):
@@ -563,7 +561,6 @@ class RPi(threading.Thread):
                         arduino_msg = arduino_message_formatter(move)
                         android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
                     elif(returnFastestPath == True):
-                        print("returnFastestPath == True")
                         returnFastestPath = False
                         move = [returnFastestPathCommand]
                         exp.robot.getSensors(sensors)
@@ -571,10 +568,8 @@ class RPi(threading.Thread):
                         arduino_msg = arduino_message_formatter(move)
                         android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
                     else:
-                        print("fastestPathStart == false and returnFastestPath == false")
                         # If not 100% coverage
                         if (exp.exploredArea != 100 and continueExplore):
-                            print("exp.exploredArea != 100 and continueExplore")
                             current = exp.moveStep(sensors) # Get next movements and whether or not 100% covergae is reached
                             currentMap = exp.currentMap
                             area = exp.exploredArea
@@ -586,12 +581,14 @@ class RPi(threading.Thread):
                             update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head,
                                 START, GOAL, elapsedTime)
                             steps += 1
+                            # If the robot goes back to the start after explorin more than 50% of the arena
+                            if (np.array_equal(exp.robot.center, START) and exp.exploredArea > 50):
+                                # Increase cycle count by 1
+                                numCycle += 1
                             if (numCycle > 1 and steps > 4):
-                                print("numCycle > 1 and steps > 4")
                                 # Get valid neighbours of unexplored spaces that is the closest to the robot's current position
                                 neighbour = exp.getExploredNeighbour()
                                 if (neighbour):
-                                    print("neighbour exists")
                                     neighbour = np.asarray(neighbour)
                                     # If the neighbour exists, get the fastest path from robot's current position to that neighbour
                                     fsp = FastestPath(currentMap, exp.robot.center, neighbour,
@@ -635,19 +632,14 @@ class RPi(threading.Thread):
                                             fastestPathStartCommand = RIGHT
                                 else:
                                     continueExplore = False
-                            else:
-                                print("(numCycle > 1 and steps > 4) != False")
                                 # If the current position has been visited
                                 if (nextPos in visited):
-                                    print("nextPos in visited")
                                     # Increase the visited count of the current position by one
                                     visited[nextPos] += 1
                                     # if (len(path) > 9 and ( path[-3] == nextPos or path[-4] == nextPos )):
-                                    if (len(path) > 9 and ( exp.robot.movement[-9:-1] == ['W', 'D', 'W', 'D', 'W', 'D', 'W', 'D'] )):
-                                        print("len(path) > 9 and ( path[-1] == nextPos or path[-2] == nextPos or path[-3] == nextPos or path[-4] == nextPos or path[-5] == nextPos or path[-6] == nextPos)")
+                                    if (len(path) > 9 and ( exp.robot.movement[-9:-1] == [FORWARD, RIGHT, FORWARD, RIGHT, FORWARD, RIGHT, FORWARD, RIGHT] )):
                                         # If the current position has been visited for more than three times
                                         if ((area > 15 and visited[nextPos] > 1) or (visited[nextPos] > 3)) and area < 99:
-                                            print("area > 15 and visited[nextPos] > 1) or (visited[nextPos] > 3) and area < 99")
                                             # Get closest neighbour that has been explored
                                             neighbour = exp.getCloseExploredNeighbour()
                                             neighbour2 = exp.getExploredNeighbour()
@@ -661,7 +653,6 @@ class RPi(threading.Thread):
                                                         neighbour = neighbour2
                                             # If there is such a neighbour
                                             if (neighbour):
-                                                print("neighbour exists")
                                                 neighbour = np.asarray(neighbour)
                                                 # Get the shortest path to go to that neighbour
                                                 fsp = FastestPath(currentMap, exp.robot.center, neighbour,
@@ -704,20 +695,16 @@ class RPi(threading.Thread):
                                                         fastestPathStart = True
                                                         fastestPathStartCommand = RIGHT
                                 else:
-                                    print("nextPos not in visited")
                                     visited[nextPos] = 1
                                 # If the robot goes back to the start after explorin more than 50% of the arena
                                 if (np.array_equal(exp.robot.center, START) and exp.exploredArea > 50):
-                                    print("np.array_equal(exp.robot.center, START) and exp.exploredArea > 50")
                                     # Increase cycle count by 1
                                     numCycle += 1
                                     # If the number of cycles is greater than one and robot has taken more than 4 steps
                                     if (numCycle > 1 and steps > 4):
-                                        print("numCycle > 1 and steps > 4")
                                         # Get valid neighbours of unexplored spaces that is the closest to the robot's current position
                                         neighbour = exp.getExploredNeighbour()
                                         if (neighbour):
-                                            print("neighbour exists")
                                             neighbour = np.asarray(neighbour)
                                             # If the neighbour exists, get the fastest path from robot's current position to that neighbour
                                             fsp = FastestPath(currentMap, exp.robot.center, neighbour,
@@ -774,41 +761,31 @@ class RPi(threading.Thread):
                             # print 'Time 2: %s s' % (time.time() - time_t)
                         # If 100% coverage
                         else:
-                            print("100% robot center: " + str(exp.robot.center))
                             # Inform front end that exploration is complete
                             update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head,
                                 START, GOAL, elapsedTime)
                             logger('Exploration Done !')
                             logger("Map Descriptor 1  -->  "+str(exp.robot.descriptor_1()))
                             logger("Map Descriptor 3  -->  "+str(exp.robot.descriptor_3()))
-                            print("100% currentMap: " + str(currentMap))
-                            print("100% exp.robot.center" + str(exp.robot.center))
-                            print("100% START: " + str(START))
-                            print("100% exp.robot.direction: " + str(exp.robot.direction))
                             # Initiate fastest path without any waypoint to get from robot's current position to the start point
                             fsp = FastestPath(currentMap, exp.robot.center, START, exp.robot.direction,
                                             None, sim=False)
                             logger('Fastest Path Started !')
                             fastestPath(fsp, START, exp.exploredArea, None)
                             move = fsp.movement
-                            print("100% move: " + str(move))
+                            exp.robot.phase = 2
+                            exp.robot.center = START
+                            exp.robot.head = fsp.robot.head
+                            exp.robot.direction = fsp.robot.direction
                             currentMap = exp.currentMap
                             global direction
-                            ######################################
-                            ###############Update this accordingly
-                            ######################################
                             if (fsp.robot.direction == WEST):
                                 calibrate_move = [ENDEXPLORATIONWEST]
                             else:
                                 calibrate_move = [ENDEXPLORATIONALIGNSOUTH]
-                            # After calibrating robot such that it faces North, set direction as North
-                            direction = EAST
-                            ######################################
-                            ###############Update this accordingly
-                            ######################################
-                            print("100% move: " + str(move))
+                            exp.robot.direction = EAST
                             arduino_msg = arduino_message_formatter(move + calibrate_move, getSensor=False)
-                            android_msg = android_message_formatter('EXPLORE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction, str(exp.robot.descriptor_3())])
+                            android_msg = android_message_formatter('EXPLORE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", EAST, str(exp.robot.descriptor_3())])
                             time.sleep(1)
                     self.client_socket.send(android_msg)
                     print ('Sent %s to RPi' % (android_msg))
@@ -820,12 +797,17 @@ class RPi(threading.Thread):
                     log_file.flush()
                 # Start fastest path
                 elif (split_data[0] == 'FASTEST'):
+                    print("Fastest currentMap: " + str(currentMap))
+                    print("Fastest START: " + str(START))
+                    print("Fastest GOAL: " + str(GOAL))
+                    print("Fastest direction: " + str(direction))
+                    print("waypoint: " + str(waypoint))
                     fsp = FastestPath(currentMap, START, GOAL, direction, waypoint, sim=False)
                     #file1= np.ones([20, 15])
                     #sim=True
                     #fsp = FastestPath(file1, START, GOAL, direction, waypoint, sim)
-
                     currentPos = tuple(fsp.robot.center)
+                    print("Fastest currentPos: " + str(currentPos))
                     fastestPath(fsp, GOAL, 300, waypoint, backwards=False)
                     # move = fsp.movement
                     move = fsp.movement

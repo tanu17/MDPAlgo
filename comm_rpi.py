@@ -1,3 +1,13 @@
+"""
+UPDATES:
+
+changed sleep time everywhere 
+split_data "REACHED"
+added fastest path to start, wait and then calibrate using REACHED
+changed count from W6 to maximum of W9
+"""
+
+
 import socket
 import json
 import numpy as np
@@ -13,7 +23,7 @@ from threading import Thread
 from tornado.options import define, options
 from Algo.Exploration import Exploration
 from Algo.FastestPath import FastestPath
-from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, EAST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT, MAX_ROWS, MAX_COLS, FORWARD2, FORWARD3, ROTATE180, ENDEXPLORATIONALIGNSOUTH, ENDEXPLORATIONWEST
+from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, EAST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT, MAX_ROWS, MAX_COLS, FORWARD2, FORWARD3, ROTATE180, ENDEXPLORATIONALIGNSOUTH, ENDEXPLORATIONWEST, REACHEDSTART
 
 # Global Variables
 define("port", default=8888, help="run on the given port 8888", type=int)
@@ -400,7 +410,7 @@ def arduino_message_formatter(movement, getSensor=True):
         for i in range(len(string)-1):
             if(string[i] == string[i+1]):
                 count+=1
-                if count == 6:
+                if count == 9:
                     res += str(count)
                     res += string[i+1]
                     count = 0
@@ -419,9 +429,19 @@ def arduino_message_formatter(movement, getSensor=True):
             if (res[i]==RIGHT and res[i+1] == "2") or (res[i]==LEFT and res[i+1] == "2"):
                 res1 += "J1"
                 i += 2
+            elif (res[i]==FORWARD and res[i+1]=="0"):
+                pass
             else:
                 res1 += res[i]
                 res1 += res[i+1]
+        """
+        if "W0" in res1:
+            for i in range(len(res1)):
+                if (res1[i]=="W" and res1[i+1]=="0"):
+                    pass
+                else:
+
+        """
         #     if res[i]==FORWARD:
         #         if res[i+1]=="1":
         #             res1 += FORWARD
@@ -479,11 +499,12 @@ class RPi(threading.Thread):
         #str_new= self.align_for_farther(exp,string)
         str_new= string
         self.client_socket.send(str_new)
-        time.sleep(0.1)
+        time.sleep(0.05)
         print ('Sent %s to RPi' % (str_new))
+        log_file.write("Sent %s to Arduino" % str_new)
         return (str_new)
 
-    
+    """
     def align_for_farther(self,exp,msg):
         if FORWARD2 in msg:
             r,c = exp.robot.center
@@ -500,9 +521,13 @@ class RPi(threading.Thread):
                 return(msg)
         else:
             return(msg)
+    """
 
         # Receive and send data to RPi data
     def receive_send(self):
+
+        explorationDone= False
+
         time_t = time.time()
         elapsedTime = 0
         continueExplore = True
@@ -552,6 +577,7 @@ class RPi(threading.Thread):
                     waypoint = map(int, split_data[1:])
                     waypoint[0] = 19 - waypoint[0]
                     print(waypoint)
+
                 elif (split_data[0] == 'COMPUTE'):
                     # print ('Time 0: %s s' % (time.time() - time_t))
                     # Get sensor values
@@ -578,7 +604,7 @@ class RPi(threading.Thread):
                         android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
                     else:
                         # If not 100% coverage
-                        if (exp.exploredArea <= 99 and continueExplore):
+                        if (exp.exploredArea <= 99.33 and continueExplore):
                             current = exp.moveStep(sensors) # Get next movements and whether or not 100% covergae is reached
                             currentMap = exp.currentMap
                             area = exp.exploredArea
@@ -788,40 +814,56 @@ class RPi(threading.Thread):
                             exp.robot.direction = fsp.robot.direction
                             currentMap = exp.currentMap
                             global direction
+
+                            time.sleep(3)
+
                             if (fsp.robot.direction == WEST):
                                 calibrate_move = [ENDEXPLORATIONWEST]
                             else:
                                 calibrate_move = [ENDEXPLORATIONALIGNSOUTH]
                             exp.robot.direction = EAST
-                            arduino_msg = arduino_message_formatter(move + calibrate_move, getSensor=False)
-                            android_msg = android_message_formatter('EXPLORE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", EAST, str(exp.robot.descriptor_3())])
-                            print(direction)
-                            time.sleep(1)
-                    self.client_socket.send(android_msg)
-                    time.sleep(0.1)
-                    print ('Sent %s to RPi' % (android_msg))
-                    
-                    arduino_msg= self.HP_checker(arduino_msg,exp)
 
+                            arduino_msg_with_R= arduino_message_formatter(move + [REACHEDSTART+"1"], getSensor=False)
+                            arduino_calibrate_msg = arduino_message_formatter(calibrate_move, getSensor=False)
+                            explorationDone=True
+                            
+                            android_msg = android_message_formatter('EXPLORE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", EAST, str(exp.robot.descriptor_3())])
+                            
+                            time.sleep(0.5)
+                    self.client_socket.send(android_msg)
+                    time.sleep(0.05)
+                    print ('Sent %s to RPi' % (android_msg))
+                    if (explorationDone):
+                        self.HP_checker(arduino_msg_with_R,exp)
+                    else:
+                        arduino_msg= self.HP_checker(arduino_msg,exp)
+                    #print("Direction before starting fastest path:" , direction)
                     log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))
                     log_file.write('Sent %s to RPi\n\n' % (android_msg))
                     log_file.flush()
                 # Start fastest path
+
+                elif (split_data[0]== "REACHED"):
+                    time.sleep(3)
+                    self.HP_checker(arduino_calibrate_msg,exp)
+
                 elif (split_data[0] == 'FASTEST'):
-                    print(direction)
-                    fsp = FastestPath(currentMap, START, GOAL, direction, waypoint, sim=False)
+                    print("Direction after clicking fastest path:" , direction)
+                    fsp = FastestPath(currentMap, START, GOAL, EAST, waypoint, sim=False)
                     #file1= np.ones([20, 15])
                     #sim=True
                     #fsp = FastestPath(file1, START, GOAL, direction, waypoint, sim)
                     currentPos = tuple(fsp.robot.center)
                     fastestPath(fsp, GOAL, 300, waypoint, backwards=False)
+                    print("Direction after starting fastest path:" , direction)
                     # move = fsp.movement
                     move = fsp.movement
+                    print("Fastest path movement: ", move)
                     path = fsp.path
                     arduino_msg = arduino_message_formatter(move, getSensor=False)
                     android_msg = android_message_formatter('FASTEST', path)
                     self.client_socket.send(android_msg)
-                    time.sleep(0.1)
+                    time.sleep(0.05)
                     print ('Sent %s to RPi' % (android_msg))
                     arduino_msg= self.HP_checker(arduino_msg,exp)
                     log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))

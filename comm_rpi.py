@@ -1,10 +1,16 @@
 """
 UPDATES:
 
-changed sleep time everywhere 
+changed arduino string to string without numbers
 split_data "REACHED"
 added fastest path to start, wait and then calibrate using REACHED
 changed count from W6 to maximum of W9
+
+sleep time
+    3 -> 1
+    0.5 -> 0.1
+    0.1 -> 0.05
+    Reached start calibrate time set to 5
 """
 
 
@@ -23,7 +29,7 @@ from threading import Thread
 from tornado.options import define, options
 from Algo.Exploration import Exploration
 from Algo.FastestPath import FastestPath
-from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, EAST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT, MAX_ROWS, MAX_COLS, FORWARD2, FORWARD3, ROTATE180, ENDEXPLORATIONALIGNSOUTH, ENDEXPLORATIONWEST, REACHEDSTART
+from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, EAST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT, MAX_ROWS, MAX_COLS, FORWARD2, FORWARD3, FORWARD4, FORWARD5, FORWARD6, FORWARD7, FORWARD8, FORWARD9, ROTATE180, ENDEXPLORATIONALIGNSOUTH, ENDEXPLORATIONWEST, REACHEDSTART
 
 # Global Variables
 define("port", default=8888, help="run on the given port 8888", type=int)
@@ -315,8 +321,6 @@ def exploration(exp, limit, coverage):
     fastestPath(fsp, START, exp.exploredArea, None)
 
 
-
-
 def startFastestPath(waypoint):
     """To start the fastest path of the maze
     """
@@ -394,7 +398,9 @@ def android_message_formatter(msg, array):
         array = array.tolist()
     return "B" + msg + '|' + '|'.join(map(str, array))
 
+
 def arduino_message_formatter(movement, getSensor=True):
+
     if not isinstance(movement, list):
         movement = movement.tolist()
     string = "".join(map(str, movement))
@@ -403,7 +409,6 @@ def arduino_message_formatter(movement, getSensor=True):
 
     if len(string) > 0:
         count = 1
-
         #Add in first character
         res += string[0]
         #Iterate through loop, skipping last one
@@ -423,59 +428,61 @@ def arduino_message_formatter(movement, getSensor=True):
         else:
           res = res[:-1]
         
-    #--------------------> Added combine movement
+    #--------------------> Changed back command to arduino as one string without numbers
     
         for i in range(0, len(res), 2):
+
             if (res[i]==RIGHT and res[i+1] == "2") or (res[i]==LEFT and res[i+1] == "2"):
-                res1 += "J1"
-                i += 2
-            elif (res[i]==FORWARD and res[i+1]=="0"):
+                res1 += ROTATE180
+            elif res[i]==FORWARD:
+                if res[i+1]=="1":
+                    res1 += FORWARD
+                elif res[i+1]=="0":
+                    pass
+                elif res[i+1]=="2":
+                    res1 += FORWARD2
+                elif res[i + 1] == "3":
+                    res1 += FORWARD3
+                elif res[i+1]=="4":
+                    res1 += FORWARD4
+                elif res[i+1]=="5":
+                    res1 += FORWARD5
+                elif res[i+1]=="6":
+                    res1 += FORWARD6
+                elif res[i+1]=="7":
+                    res1 += FORWARD7
+                elif res[i+1]=="8":
+                    res1 += FORWARD8
+                elif res[i+1]=="9":
+                    res1 += FORWARD9
+
+            elif res[i]==ALIGNRIGHT:
+                pass
+
+            #else:
+            #    for j in range(int(res[i+1])):
+            #        res1 += res[i]
+            elif (res[i+1]=="1"):
+                res1 += res[i]
+        """
+        for i in range(len(res)):
+            if i+2<=len(res) and res[i]==FORWARD and res[i+1]=="2":
+                res1 += FORWARD2
+            elif i+2<=len(res) and res[i]==FORWARD and res[i+1]=="3":
+                res1 += FORWARD3
+            elif i+2<=len(res) and res[i]==FORWARD and res[i+1]=="4":
+                res1 += FORWARD2 + FORWARD2
+            elif i+2<=len(res) and res[i]==FORWARD and res[i+1]=="5":
+                res1 += FORWARD2 + FORWARD3
+            elif i+2<=len(res) and res[i]==RIGHT and res[i+1]=="2":
+                res1 += ROTATE180
+            elif ((res[i]=="1" or res[i]=="2" or  res[i]=="3" or res[i]=="4" or res[i]=="5")):
                 pass
             else:
                 res1 += res[i]
-                res1 += res[i+1]
         """
-        if "W0" in res1:
-            for i in range(len(res1)):
-                if (res1[i]=="W" and res1[i+1]=="0"):
-                    pass
-                else:
-
-        """
-        #     if res[i]==FORWARD:
-        #         if res[i+1]=="1":
-        #             res1 += FORWARD
-        #         elif res[i+1]=="2":
-        #             res1 += FORWARD2
-        #         elif res[i + 1] == "3":
-        #             res1 += FORWARD3
-        #         elif res[i+1]=="4":
-        #             res1 += FORWARD2 + FORWARD2
-        #         elif res[i+1]=="5":
-        #             res1 += FORWARD2 + FORWARD3
-        #     elif (res[i]==RIGHT and res[i+1] == "2") or (res[i]==LEFT and res[i+1] == "2"):
-        #         res1 += ROTATE180
-        #     else:
-        #         for j in range(int(res[i+1])):
-        #             res1 += res[i]
-
-        # for i in range(len(res)):
-        #     if i+2<=len(res) and res[i]==FORWARD and res[i+1]=="2":
-        #         res1 += FORWARD2
-        #     elif i+2<=len(res) and res[i]==FORWARD and res[i+1]=="3":
-        #         res1 += FORWARD3
-        #     elif i+2<=len(res) and res[i]==FORWARD and res[i+1]=="4":
-        #         res1 += FORWARD2 + FORWARD2
-        #     elif i+2<=len(res) and res[i]==FORWARD and res[i+1]=="5":
-        #         res1 += FORWARD2 + FORWARD3
-        #     elif i+2<=len(res) and res[i]==RIGHT and res[i+1]=="2":
-        #         res1 += ROTATE180
-        #     elif ((res[i]=="1" or res[i]=="2" or  res[i]=="3" or res[i]=="4" or res[i]=="5")):
-        #         pass
-        #     else:
-        #         res1 += res[i]
     if getSensor == True:
-        return "A" + res1 + SENSOR + "1"
+        return "A" + res1 + SENSOR
     else:
         return "A" + res1
 
@@ -495,14 +502,14 @@ class RPi(threading.Thread):
         self.client_socket.connect((self.ip, self.port))
         print("sent connection request")
 
-    def HP_checker(self,string,exp):                                                  
+    def send_arduino_message(self,string,exp):                                                  
         #str_new= self.align_for_farther(exp,string)
-        str_new= string
-        self.client_socket.send(str_new)
+        #str_new= string
+        self.client_socket.send(string)
         time.sleep(0.05)
-        print ('Sent %s to RPi' % (str_new))
-        log_file.write("Sent %s to Arduino" % str_new)
-        return (str_new)
+        print ('Sent %s to RPi' % (string))
+        log_file.write("Sent %s to Arduino" % string)
+        return (string)
 
     """
     def align_for_farther(self,exp,msg):
@@ -560,21 +567,13 @@ class RPi(threading.Thread):
                     path.append(tuple(exp.robot.center))
                     update(exp.currentMap, exp.exploredArea, exp.robot.center, exp.robot.head,
                            START, GOAL, 0)
-                    arduino_msg = arduino_message_formatter(["U"], getSensor=False)
-                    arduino_msg= self.HP_checker(arduino_msg,exp)
-
-                    """
-                    if ("P" in arduino_msg) and ("Z" in arduino_msg):
-                        self.client_socket.send(arduino_msg[:arduino_msg.index("Z")+1])
-                        print ('Sent %s to RPi' % (arduino_msg[:arduino_msg.index("Z")]+ " W" + "P"))
-                        self.client_socket.send("AQ"+arduino_msg[arduino_msg.index("Z")+1:])
-                        print ('Sent %s to RPi' % ("AQ"+arduino_msg[arduino_msg.index("Z")+1:]))
-                    """
+                    arduino_msg = arduino_message_formatter(["N"], getSensor=False)
+                    self.send_arduino_message(arduino_msg,exp) 
                         
                 # Set waypoint
                 elif (split_data[0] == 'WAYPOINT'):
                     global waypoint
-                    waypoint = map(int, split_data[1:])
+                    waypoint = map(int, split_data[1:]) 
                     waypoint[0] = 19 - waypoint[0]
                     print(waypoint)
 
@@ -604,7 +603,7 @@ class RPi(threading.Thread):
                         android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
                     else:
                         # If not 100% coverage
-                        if (exp.exploredArea <= 99.33 and continueExplore):
+                        if (exp.exploredArea <= 99.67 and continueExplore):
                             current = exp.moveStep(sensors) # Get next movements and whether or not 100% covergae is reached
                             currentMap = exp.currentMap
                             area = exp.exploredArea
@@ -787,9 +786,6 @@ class RPi(threading.Thread):
                                         continueExplore = False
                             # print 'Time 1: %s s' % (time.time() - time_t)
                             time_t = time.time()
-                            ######################################
-                            ###############Update this accordingly
-                            ######################################
                             # arduino_msg and android_msg is the message to be sent to Rpi
                             arduino_msg = arduino_message_formatter(move)
                             android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
@@ -815,7 +811,7 @@ class RPi(threading.Thread):
                             currentMap = exp.currentMap
                             global direction
 
-                            time.sleep(3)
+                            time.sleep(1)
 
                             if (fsp.robot.direction == WEST):
                                 calibrate_move = [ENDEXPLORATIONWEST]
@@ -829,14 +825,15 @@ class RPi(threading.Thread):
                             
                             android_msg = android_message_formatter('EXPLORE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", EAST, str(exp.robot.descriptor_3())])
                             
-                            time.sleep(0.5)
+                            time.sleep(0.1)
+
                     self.client_socket.send(android_msg)
                     time.sleep(0.05)
                     print ('Sent %s to RPi' % (android_msg))
                     if (explorationDone):
-                        self.HP_checker(arduino_msg_with_R,exp)
+                        self.send_arduino_message(arduino_msg_with_R,exp)
                     else:
-                        arduino_msg= self.HP_checker(arduino_msg,exp)
+                        self.send_arduino_message(arduino_msg,exp)
                     #print("Direction before starting fastest path:" , direction)
                     log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))
                     log_file.write('Sent %s to RPi\n\n' % (android_msg))
@@ -844,8 +841,8 @@ class RPi(threading.Thread):
                 # Start fastest path
 
                 elif (split_data[0]== "REACHED"):
-                    time.sleep(3)
-                    self.HP_checker(arduino_calibrate_msg,exp)
+                    time.sleep(4)
+                    self.send_arduino_message(arduino_calibrate_msg,exp)
 
                 elif (split_data[0] == 'FASTEST'):
                     print("Direction after clicking fastest path:" , direction)
@@ -865,7 +862,7 @@ class RPi(threading.Thread):
                     self.client_socket.send(android_msg)
                     time.sleep(0.05)
                     print ('Sent %s to RPi' % (android_msg))
-                    arduino_msg= self.HP_checker(arduino_msg,exp)
+                    self.send_arduino_message(arduino_msg,exp)
                     log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))
                     log_file.write('Sent %s to RPi\n\n' % (android_msg))
                     log_file.flush()
@@ -880,9 +877,6 @@ class RPi(threading.Thread):
             time.sleep(0.5)
             # edit out sleep to check if we can optimize run time
             # edit out fastestPath during exploration and check if it optimizes run time
-
-    
-
 
 
 settings = dict(

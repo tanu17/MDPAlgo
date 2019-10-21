@@ -593,14 +593,14 @@ class RPi(threading.Thread):
                         exp.robot.getSensors(sensors)
                         exp.robot.moveBot(fastestPathStartCommand)
                         arduino_msg = arduino_message_formatter(move)
-                        android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
+                        android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction, str(exp.robot.descriptor_3())])
                     elif(returnFastestPath == True):
                         returnFastestPath = False
                         move = [returnFastestPathCommand]
                         exp.robot.getSensors(sensors)
                         exp.robot.moveBot(returnFastestPathCommand)
                         arduino_msg = arduino_message_formatter(move)
-                        android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
+                        android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction, str(exp.robot.descriptor_3())])
                     else:
                         # If not 100% coverage
                         if (exp.exploredArea <= 99.67 and continueExplore):
@@ -788,7 +788,7 @@ class RPi(threading.Thread):
                             time_t = time.time()
                             # arduino_msg and android_msg is the message to be sent to Rpi
                             arduino_msg = arduino_message_formatter(move)
-                            android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction])
+                            android_msg = android_message_formatter('EXPLORE',[str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", exp.robot.direction, str(exp.robot.descriptor_3())])
                             # print 'Time 2: %s s' % (time.time() - time_t)
                         # If 100% coverage
                         else:
@@ -823,7 +823,7 @@ class RPi(threading.Thread):
                             arduino_calibrate_msg = arduino_message_formatter(calibrate_move, getSensor=False)
                             explorationDone=True
                             
-                            android_msg = android_message_formatter('EXPLORE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", EAST, str(exp.robot.descriptor_3())])
+                            android_msg = android_message_formatter('DONE', [str(exp.robot.descriptor_1()), str(exp.robot.descriptor_2()), "[" + str(19 - exp.robot.center[0]) + "," + str(exp.robot.center[1]) + "]", EAST, str(exp.robot.descriptor_3())])
                             
                             time.sleep(0.1)
 

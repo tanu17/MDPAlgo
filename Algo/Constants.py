@@ -11,7 +11,7 @@ WEST = "Left"
 # COMMANDS
 LEFT = "A" # Rotate counter-clockwise by 90 degrees
 RIGHT = "D" # Rotate clockwise by 90 degrees
-FORWARD = "W" # Move forward 10cm
+
 FORWARDFAST = "F" # Move forward quickly by 10cm
 BACKWARDS = "S" # Move backwards by 10cm
 BACKWARDSFAST = "B" # Move backwards quickly by 10cm
@@ -20,14 +20,23 @@ ALIGNRIGHT = "P" # Tell robot to align itself using obstacles on the right
 ALIGNFRONT = "H" # Tell robot to align itself using obstacles on the front
 PICTURE = "I"
 
-REACHEDSTART= "R"
+REACHEDSTART= "G"
 
-ENDEXPLORATIONALIGNSOUTH = "Y"
+ENDEXPLORATIONALIGNSOUTH = "V"
 ENDEXPLORATIONWEST = "M"
 
 ROTATE180 = "J"
+
+#Forward Commands x10cm
+FORWARD = "W"
 FORWARD2 = "Q"
-FORWARD3 = "Z"
+FORWARD3 = "E"
+FORWARD4 = "R"
+FORWARD5 = "T"
+FORWARD6= "Y"
+FORWARD7 = "U"
+FORWARD8 = "I"
+FORWARD9= "O"
 
 
 # Arena is 200cm by 150cm

@@ -1,15 +1,12 @@
 """
 UPDATES:
 
-changed arduino string to string without numbers
-split_data "REACHED"
-added fastest path to start, wait and then calibrate using REACHED
-changed count from W6 to maximum of W9
+added image string formatter and image clicker logic
 
 sleep time
     3 -> 1
     0.5 -> 0.1
-    0.1 -> 0.05
+    0.1 -> --
     Reached start calibrate time set to 5
 """
 
@@ -29,7 +26,7 @@ from threading import Thread
 from tornado.options import define, options
 from Algo.Exploration import Exploration
 from Algo.FastestPath import FastestPath
-from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, EAST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT, MAX_ROWS, MAX_COLS, FORWARD2, FORWARD3, FORWARD4, FORWARD5, FORWARD6, FORWARD7, FORWARD8, FORWARD9, ROTATE180, ENDEXPLORATIONALIGNSOUTH, ENDEXPLORATIONWEST, REACHEDSTART
+from Algo.Constants import START, GOAL, NORTH, SOUTH, WEST, EAST, SENSOR, LEFT, RIGHT, FORWARD, FORWARDFAST, BACKWARDS, BACKWARDSFAST, ALIGNRIGHT, ALIGNFRONT, MAX_ROWS, MAX_COLS, FORWARD2, FORWARD3, FORWARD4, FORWARD5, FORWARD6, FORWARD7, FORWARD8, FORWARD9, ROTATE180, ENDEXPLORATIONALIGNSOUTH, ENDEXPLORATIONWEST, REACHEDSTART, PICTURE
 
 # Global Variables
 define("port", default=8888, help="run on the given port 8888", type=int)
@@ -251,10 +248,12 @@ def exploration(exp, limit, coverage):
                     exp.robot.center = neighbour
                     exp.robot.head = fsp.robot.head
                     exp.robot.direction = fsp.robot.direction
+
                     if (exp.robot.direction == NORTH):
-                        if(0<=exp.robot.center[1]+2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 ):
+                        if(0<=exp.robot.center[1]+2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] +2] == 0 ):  
                             exp.robot.moveBot(RIGHT)
                             exp.robot.getSensors()
+
                         elif(0<=exp.robot.center[1]-2<MAX_COLS and (exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0 or exp.robot.exploredMap[exp.robot.center[0] + 1][exp.robot.center[1] -2] == 0)):
                             exp.robot.moveBot(LEFT)
                             exp.robot.getSensors()
@@ -265,8 +264,10 @@ def exploration(exp, limit, coverage):
                         elif(0<=exp.robot.center[1]-2<MAX_COLS and exp.robot.exploredMap[exp.robot.center[0]][exp.robot.center[1] -2] == 0):
                             exp.robot.moveBot(RIGHT)
                             exp.robot.getSensors()
+
                     elif (exp.robot.direction == EAST):
                         if(0<= exp.robot.center[0]+2 <MAX_ROWS and exp.robot.exploredMap[exp.robot.center[0]+2][exp.robot.center[1]] == 0):
+
                             exp.robot.moveBot(RIGHT)
                             exp.robot.getSensors()
                         elif(0<= exp.robot.center[0]-2 <MAX_ROWS and (exp.robot.exploredMap[exp.robot.center[0]-2][exp.robot.center[1]] == 0 or exp.robot.exploredMap[exp.robot.center[0] - 2][exp.robot.center[1] - 1] == 0)):
@@ -288,7 +289,14 @@ def exploration(exp, limit, coverage):
             visited[currentPos] = 1
         if (np.array_equal(exp.robot.center, START)):
             numCycle += 1
-            if (numCycle > 1 and steps > 4 and exp.exploredArea < 100):
+
+            if numCycle>1 and exp.exploredArea>55:
+                break
+
+
+            elif (numCycle > 1 and steps > 4 and exp.exploredArea < 55):
+
+
                 neighbour = exp.getExploredNeighbour()
                 if (neighbour):
                     neighbour = np.asarray(neighbour)
@@ -307,6 +315,9 @@ def exploration(exp, limit, coverage):
                 else:
                     # When there are no such neighbour and robot is stuck, break out of while loop and stop exploration
                     break
+
+            
+
         # Simulate the velocity of the robot according to the specified time step by pausing execution using time.sleep method
         time.sleep(float(step))
     # Update front end
@@ -319,6 +330,10 @@ def exploration(exp, limit, coverage):
     fsp = FastestPath(currentMap, exp.robot.center, START, exp.robot.direction, None)
     logger('Fastest Path Started !')
     fastestPath(fsp, START, exp.exploredArea, None)
+
+
+
+
 
 
 def startFastestPath(waypoint):
@@ -456,8 +471,8 @@ def arduino_message_formatter(movement, getSensor=True):
                 elif res[i+1]=="9":
                     res1 += FORWARD9
 
-            elif res[i]==ALIGNRIGHT:
-                pass
+            #elif res[i]==ALIGNRIGHT:
+            #    pass
 
             #else:
             #    for j in range(int(res[i+1])):
@@ -489,6 +504,15 @@ def arduino_message_formatter(movement, getSensor=True):
 # def fastestPathAddRightAlign():
 
 
+def image_string_formatter(lst,direction):
+    str1="I"
+    for coordinate in lst:
+        str1+=str(coordinate)+"|"
+    str1+=direction
+    return(str1)
+    
+
+
 class RPi(threading.Thread):
     def __init__(self):
         print("starting rpi communication")
@@ -506,29 +530,152 @@ class RPi(threading.Thread):
         #str_new= self.align_for_farther(exp,string)
         #str_new= string
         self.client_socket.send(string)
-        time.sleep(0.05)
+        time.sleep(0.1)
         print ('Sent %s to RPi' % (string))
         log_file.write("Sent %s to Arduino" % string)
         return (string)
 
-    """
-    def align_for_farther(self,exp,msg):
-        if FORWARD2 in msg:
-            r,c = exp.robot.center
-            return_str= msg[:msg.index(FORWARD2)+1] + RIGHT + ALIGNFRONT + LEFT + msg[msg.index(FORWARD2)+1:]
-            if exp.robot.direction==NORTH and ( (not exp.eastFree(exp.robot.center)) or c+2 >= MAX_COLS):
-                return(return_str)
-            elif exp.robot.direction==EAST and ((not exp.northFree(exp.robot.center)) or r-2 <= 0):
-                return(return_str)
-            elif exp.robot.direction==WEST and ((not exp.southFree(exp.robot.center)) or r+2 >= MAX_ROWS):
-                return(return_str)
-            elif exp.robot.direction==SOUTH and ( (not exp.westFree(exp.robot.center)) or c+2 >= MAX_COLS):
-                return(return_str)
-            else:
-                return(msg)
-        else:
-            return(msg)
-    """
+
+    def image_recog(self,exp,currentMap):
+        r,c = exp.robot.center
+        # Direction is north
+        coordinate_list= [r,c]
+        truth_value=False
+        if exp.robot.direction==NORTH:
+            # First three blocks in a row are empty
+            #if currentMap[r-1][c]==1 and currentMap[r-1][c+1]==1 and currentMap[r-1][c-1]==1:
+                if  r-3>=0 and (currentMap[r-3][c]==2 or currentMap[r-3][c+1]==2 or currentMap[r-3][c-1]==2):
+                    truth_value= True
+                    if (currentMap[r-3][c-1]==2):
+                        coordinate_list+=[20-(r-3),c-1]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if(currentMap[r-3][c]==2):
+                        coordinate_list+=[20-(r-3),c]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if (currentMap[r-3][c+1]==2):
+                        coordinate_list+=[20-(r-3),c+1]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    return(truth_value,coordinate_list,exp.robot.direction)
+
+                elif r-4>=0 and (currentMap[r-4][c-1]==2 or currentMap[r-4][c]==2 or  currentMap[r-4][c+1]==2):
+                    truth_value= True
+                    if (currentMap[r-4][c-1]==2):
+                        coordinate_list+=[20-(r-4),c-1]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if(currentMap[r-4][c]==2):
+                        coordinate_list+=[20-(r-4),c]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if (currentMap[r-4][c+1]==2):
+                        coordinate_list+=[20-(r-4),c+1]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    return(truth_value,coordinate_list,exp.robot.direction)
+
+        elif exp.robot.direction==EAST:
+            #if currentMap[r+1][c+1]==1 and currentMap[r][c+1]==1 and currentMap[r-1][c+1]==1:
+                if  c+3<MAX_COLS and (currentMap[r+1][c+3]==2 or currentMap[r-1][c+3]==2 or currentMap[r][c+3]==2):
+                    truth_value= True
+                    if (currentMap[r+1][c+3]==2):
+                        coordinate_list+=[20-(r+1),c+3]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if(currentMap[r][c+3]==2):
+                        coordinate_list+=[20-r,c+3]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if (currentMap[r+1][c+3]==2):
+                        coordinate_list+=[20-(r-1),c+3]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    return(truth_value,coordinate_list,exp.robot.direction)
+                elif c+4<MAX_COLS and (currentMap[r][c+4]==2 or currentMap[r+1][c+4]==2 or  currentMap[r-1][c+4]==2):
+                    if (currentMap[r+1][c+4]==2):
+                        coordinate_list+=[20-(r+1),c+4]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if(currentMap[r][c+4]==2):
+                        coordinate_list+=[20-r,c+4]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if (currentMap[r+1][c+4]==2):
+                        coordinate_list+=[20-(r-1),c+4]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    return(truth_value,coordinate_list,exp.robot.direction)
+        
+        elif exp.robot.direction==SOUTH:
+            #if currentMap[r+1][c]==1 and currentMap[r+1][c+1]==1 and currentMap[r-1][c-1]==1:
+                if r+3<MAX_ROWS and (currentMap[r+3][c]==2 or currentMap[r+3][c+1]==2 or currentMap[r+3][c-1]==2)  :
+                    truth_value= True
+                    if (currentMap[r+3][c+1]==2):
+                        coordinate_list+=[20-(r+3),c+1]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if(currentMap[r+3][c]==2):
+                        coordinate_list+=[20-(r+3),c]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if (currentMap[r+3][c-1]==2):
+                        coordinate_list+=[20-(r+3),c-1]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    return(truth_value,coordinate_list,exp.robot.direction)
+                if r+4<MAX_ROWS and (currentMap[r+4][c-1]==2 or currentMap[r+4][c]==2 or  currentMap[r+4][c+1]==2) :
+                    truth_value= True
+                    if (currentMap[r+4][c+1]==2):
+                        coordinate_list+=[20-(r+4),c+1]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if(currentMap[r+4][c]==2):
+                        coordinate_list+=[20-(r+4),c]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if (currentMap[r+4][c-1]==2):
+                        coordinate_list+=[20-(r+4),c-1]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    return(truth_value,coordinate_list,exp.robot.direction)
+
+        elif exp.robot.direction==WEST:
+            #if currentMap[r+1][c-1]==1 and currentMap[r][c-1]==1 and currentMap[r-1][c-1]==1:
+                if c-3>0 and (currentMap[r+1][c-3]==2 or currentMap[r-1][c-3]==2 or currentMap[r][c-3]==2) :
+                    truth_value= True
+                    if (currentMap[r-1][c-3]==2):
+                        coordinate_list+=[20-(r-1),c-3]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if(currentMap[r][c-3]==2):
+                        coordinate_list+=[20-r,c-3]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if (currentMap[r+1][c-3]==2):
+                        coordinate_list+=[20-(r+1),c-3]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    return(truth_value,coordinate_list,exp.robot.direction)
+                if c-4>0 and (currentMap[r][c-4]==2 or currentMap[r+1][c-4]==2 or  currentMap[r-1][c-4]==2) :
+                    truth_value= True
+                    if (currentMap[r-1][c-4]==2):
+                        coordinate_list+=[20-(r-1),c-4]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if(currentMap[r][c-4]==2):
+                        coordinate_list+=[20-r,c-4]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    if (currentMap[r+1][c-4]==2):
+                        coordinate_list+=[20-(r+1),c-4]
+                    else:
+                        coordinate_list+=[-1,-1]
+                    return(truth_value,coordinate_list,exp.robot.direction)
+        
+        return(False,[],"")
+
 
         # Receive and send data to RPi data
     def receive_send(self):
@@ -582,6 +729,15 @@ class RPi(threading.Thread):
                     # Get sensor values
                     sensors = map(int, split_data[1:])
                     currentPos = tuple(exp.robot.center)
+
+                    truth_value, coordinate_list, direction = self.image_recog(exp,exp.currentMap)
+                    if truth_value:
+                        r,c= currentPos
+                        print ("---------------------------------------> Sent I1234 to RPi from ", 19-r, c)
+                        image_str= image_string_formatter(coordinate_list, direction)
+                        self.client_socket.send(image_str)
+                        time.sleep(1)
+
                     if(fastestPathStart == True):
                         fastestPathStart = False
                         returnFastestPath = True
@@ -619,6 +775,9 @@ class RPi(threading.Thread):
                             if (np.array_equal(exp.robot.center, START) and exp.exploredArea > 50):
                                 # Increase cycle count by 1
                                 numCycle += 1
+#--------------------> added break
+                                break
+
                             if (numCycle > 1 and steps > 4):
                                 # Get valid neighbours of unexplored spaces that is the closest to the robot's current position
                                 neighbour = exp.getExploredNeighbour()
@@ -731,9 +890,12 @@ class RPi(threading.Thread):
                                 else:
                                     visited[nextPos] = 1
                                 # If the robot goes back to the start after explorin more than 50% of the arena
-                                if (np.array_equal(exp.robot.center, START) and exp.exploredArea > 50):
+             # ---------------->if (np.array_equal(exp.robot.center, START) and exp.exploredArea > 50):
+                                if (np.array_equal(exp.robot.center, START) and exp.exploredArea < 55):
                                     # Increase cycle count by 1
                                     numCycle += 1
+
+                
                                     # If the number of cycles is greater than one and robot has taken more than 4 steps
                                     if (numCycle > 1 and steps > 4):
                                         # Get valid neighbours of unexplored spaces that is the closest to the robot's current position
@@ -819,7 +981,7 @@ class RPi(threading.Thread):
                                 calibrate_move = [ENDEXPLORATIONALIGNSOUTH]
                             exp.robot.direction = EAST
 
-                            arduino_msg_with_R= arduino_message_formatter(move + [REACHEDSTART+"1"], getSensor=False)
+                            arduino_msg_with_R= arduino_message_formatter(move + [REACHEDSTART], getSensor=False)
                             arduino_calibrate_msg = arduino_message_formatter(calibrate_move, getSensor=False)
                             explorationDone=True
                             
@@ -828,7 +990,7 @@ class RPi(threading.Thread):
                             time.sleep(0.1)
 
                     self.client_socket.send(android_msg)
-                    time.sleep(0.05)
+                    time.sleep(0.1)
                     print ('Sent %s to RPi' % (android_msg))
                     if (explorationDone):
                         self.send_arduino_message(arduino_msg_with_R,exp)
@@ -860,7 +1022,7 @@ class RPi(threading.Thread):
                     arduino_msg = arduino_message_formatter(move, getSensor=False)
                     android_msg = android_message_formatter('FASTEST', path)
                     self.client_socket.send(android_msg)
-                    time.sleep(0.05)
+                    time.sleep(0.1)
                     print ('Sent %s to RPi' % (android_msg))
                     self.send_arduino_message(arduino_msg,exp)
                     log_file.write('Robot Center: %s\n' % (str(exp.robot.center)))

@@ -775,6 +775,7 @@ class RPi(threading.Thread):
                             if (np.array_equal(exp.robot.center, START) and exp.exploredArea > 50):
                                 # Increase cycle count by 1
                                 numCycle += 1
+                                continueExplore = False
 #--------------------> added break
                                 break
 
@@ -960,22 +961,23 @@ class RPi(threading.Thread):
                             logger('Exploration Done !')
                             logger("Map Descriptor 1  -->  "+str(exp.robot.descriptor_1()))
                             logger("Map Descriptor 3  -->  "+str(exp.robot.descriptor_3()))
-                            # Initiate fastest path without any waypoint to get from robot's current position to the start point
-                            fsp = FastestPath(currentMap, exp.robot.center, START, exp.robot.direction,
-                                            None, sim=False)
-                            logger('Fastest Path Started !')
-                            fastestPath(fsp, START, exp.exploredArea, None)
-                            move = fsp.movement
-                            exp.robot.phase = 2
-                            exp.robot.center = START
-                            exp.robot.head = fsp.robot.head
-                            exp.robot.direction = fsp.robot.direction
-                            currentMap = exp.currentMap
-                            global direction
+                            move = []
+                            if(np.array_equal(exp.robot.center, START) == False):
+                                # Initiate fastest path without any waypoint to get from robot's current position to the start point
+                                fsp = FastestPath(currentMap, exp.robot.center, START, exp.robot.direction,
+                                                None, sim=False)
+                                logger('Fastest Path Started !')
+                                fastestPath(fsp, START, exp.exploredArea, None)
+                                move = fsp.movement
+                                exp.robot.phase = 2
+                                exp.robot.center = START
+                                exp.robot.head = fsp.robot.head
+                                exp.robot.direction = fsp.robot.direction
+                                currentMap = exp.currentMap
 
                             time.sleep(1)
 
-                            if (fsp.robot.direction == WEST):
+                            if (exp.robot.direction == WEST):
                                 calibrate_move = [ENDEXPLORATIONWEST]
                             else:
                                 calibrate_move = [ENDEXPLORATIONALIGNSOUTH]
@@ -1007,7 +1009,6 @@ class RPi(threading.Thread):
                     self.send_arduino_message(arduino_calibrate_msg,exp)
 
                 elif (split_data[0] == 'FASTEST'):
-                    print("Direction after clicking fastest path:" , direction)
                     fsp = FastestPath(currentMap, START, GOAL, EAST, waypoint, sim=False)
                     #file1= np.ones([20, 15])
                     #sim=True

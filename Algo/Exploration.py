@@ -492,6 +492,8 @@ class Exploration:
         # If full coverage
         if (self.exploredArea == 100):
             return move, True
+       # if self.robot.center[0]==START[0] and self.robot.center[1]==START[1] and self.exploredArea>50:
+        #    return move,True
         else:
             return move, False
 

@@ -776,8 +776,7 @@ class RPi(threading.Thread):
                                 # Increase cycle count by 1
                                 numCycle += 1
                                 continueExplore = False
-#--------------------> added break
-                                break
+                                pass
 
                             if (numCycle > 1 and steps > 4):
                                 # Get valid neighbours of unexplored spaces that is the closest to the robot's current position

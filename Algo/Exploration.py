@@ -114,7 +114,7 @@ class Exploration:
         move = []
 
         if(not (self.sim) and self.robot.is_corner() == True):
-            move = [ALIGNFRONT, LEFT]
+            move = [ALIGNFRONT, RIGHT, ALIGNFRONT, LEFT, LEFT]
             self.robot.moveBot(LEFT)
         else:
             if not (self.sim):

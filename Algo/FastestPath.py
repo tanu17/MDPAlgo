@@ -476,6 +476,7 @@ class FastestPath:
             fsp = self.__astar(start, self.goal, backwards=True)
         path.extend(fsp)
         self.path = path
+
         self.markMap()
 
     def markMap(self):

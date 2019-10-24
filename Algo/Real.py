@@ -226,18 +226,18 @@ class Robot:
 
         # Right Bottom
         if self.direction == NORTH:
-            self.getValue(zip([r+1]*distanceLong, range(c+2, c+distanceLong+2)),
-                          sensor_vals[4], distanceLong, False, True)
+            self.getValue(zip([r+1]*distanceShort, range(c+2, c+distanceShort+2)),
+                          sensor_vals[4], distanceShort, False, True)
         elif self.direction == EAST:
-            self.getValue(zip(range(r+2, r+distanceLong+2), [c-1]*distanceLong),
-                          sensor_vals[4], distanceLong, False, True)
+            self.getValue(zip(range(r+2, r+distanceShort+2), [c-1]*distanceShort),
+                          sensor_vals[4], distanceShort, False, True)
         elif self.direction == WEST:
-            self.getValue(zip(range(r-distanceLong-1, r-1), [c+1]*distanceLong)[::-1],
-                          sensor_vals[4], distanceLong, False, True)
+            self.getValue(zip(range(r-distanceShort-1, r-1), [c+1]*distanceShort)[::-1],
+                          sensor_vals[4], distanceShort, False, True)
         else:
-            self.getValue(zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1],
-                          sensor_vals[4], distanceLong, False)
-        """
+            self.getValue(zip([r-1]*distanceShort, range(c-distanceShort-1, c-1))[::-1],
+                          sensor_vals[4], distanceShort, False)
+        
         # Left Top
         if self.direction == NORTH:
             self.getValue(zip([r-1]*distanceLong, range(c-distanceLong-1, c-1))[::-1],
@@ -251,7 +251,7 @@ class Robot:
         else:
             self.getValue(zip([r+1]*distanceLong, range(c+2, c+distanceLong+2)),
                           sensor_vals[5], distanceLong, False)
-        """
+        
     # Checks to see if the robot is at a corner
     def is_corner(self):
         r, c = self.center
